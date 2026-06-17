@@ -46,7 +46,7 @@
       "endpoints": [
         "https://github.com/XBOT98df/TrapGaint/releases/latest/download/latest.json"
       ],
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEIwMTM5NEZGRTI1M0REMEQKUldRTjNWUGkvNVFUc1Bwc25EbmtpdGE5U2hXdUd5Q00vaG1Sc0JzMngrTDYyRDY5UWxPNUZtUlQK",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEJCOTM0QkE2MzUxOUMwODkKUldTSndCazFwa3VUdTNFS0FWaDViQ1VFTkpBTGVYZ202d2ZvMDhXbUJVekx2cHBoUU4vZXdWQVMK",
       "windows": {
         "installMode": "passive"
       }
