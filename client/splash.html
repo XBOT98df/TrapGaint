@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Starting Minecraft</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      background-color: #000;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      position: relative;
+      font-family: 'Bebas Neue', sans-serif;
+      color: #fff;
+    }
+
+    body::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: transparent;
+      pointer-events: none;
+    }
+
+    .launch-text {
+      position: absolute;
+      left: 50%;
+      top: 47%;
+      transform: translate(-50%, -50%);
+      font-size: clamp(3.2rem, 9vw, 7rem);
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      text-shadow: none;
+      z-index: 1;
+      white-space: nowrap;
+      color: #ffffff;
+      display: inline-block;
+    }
+
+    .launch-meta {
+      position: absolute;
+      left: 50%;
+      top: calc(47% + clamp(2.1rem, 6.2vw, 4.8rem));
+      transform: translateX(-50%);
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.18);
+      z-index: 1;
+    }
+
+    .launch-meta img {
+      width: 28px;
+      height: 28px;
+      object-fit: contain;
+      display: block;
+    }
+
+    .launch-meta-text {
+      font-size: 1.1rem;
+      letter-spacing: 0.08em;
+      color: #fff;
+      text-transform: lowercase;
+      line-height: 1;
+      display: inline-flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+
+    .loader-name {
+      color: #ffffff;
+      display: inline-block;
+    }
+
+    .loader-version {
+      color: #fff;
+    }
+
+    .version {
+      position: absolute;
+      left: 18px;
+      bottom: 10px;
+      font-size: 1.05rem;
+      letter-spacing: 0.08em;
+      color: rgba(255, 255, 255, 0.92);
+      text-shadow: 0 4px 12px rgba(0, 0, 0, 0.7);
+      z-index: 1;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="launch-text">Running</div>
+  <div id="launchMeta" class="launch-meta">
+    <img id="loaderIcon" src="generated_images/vanilla.png" alt="loader icon">
+    <span class="launch-meta-text">
+      <span id="loaderName" class="loader-name">vanilla</span>
+      <span id="loaderVersion" class="loader-version">1.21.1</span>
+    </span>
+  </div>
+  <div id="version" class="version">v0.0.0</div>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const version = params.get('version');
+    const loader = (params.get('loader') || 'vanilla').toLowerCase();
+    const gameVersion = params.get('gameVersion') || '';
+    const modpackName = params.get('modpackName') || '';
+    const assetBase = new URL('.', window.location.href);
+    const resolveAppAsset = (assetPath) => new URL(assetPath.replace(/^\/+/, ''), assetBase).toString();
+
+    const loaderBackgroundMap = {
+      dragon: 'IMG-20260310-WA0004.jpg.webp',
+      vanilla: 'IMG-20260310-WA0005.jpg.webp',
+      forge: 'IMG-20260310-WA0006.jpg.webp',
+      fabric: 'sdshjhfs.png',
+      quilt: 'quilt-2.png',
+      lapetus: 'IMG-20260310-WA0004.jpg.webp',
+      misc: 'IMG-20260310-WA0007.jpg.webp',
+    };
+
+    const splashBackground = loaderBackgroundMap[loader] || loaderBackgroundMap.vanilla;
+    document.body.style.backgroundImage = `url('${resolveAppAsset(splashBackground)}')`;
+    
+    // Add pink hue for misc loader background
+    if (loader === 'misc') {
+      document.body.style.filter = 'hue-rotate(320deg) saturate(1.2)';
+    }
+
+    if (version) {
+      document.getElementById('version').textContent = `v${version}`;
+    }
+
+    const loaderNameMap = {
+      vanilla: 'vanilla',
+      forge: 'forge',
+      fabric: 'fabric',
+      quilt: 'quilt',
+      dragon: 'dragon',
+      lapetus: 'dragon',
+      misc: 'misc',
+    };
+
+    const loaderIconMap = {
+      vanilla: 'generated_images/vanilla.png',
+      forge: 'generated_images/forge.png',
+      fabric: 'generated_images/fabric.png',
+      quilt: 'generated_images/quilt.png',
+      dragon: 'CS_Star_8.svg',
+      misc: 'misc.png',
+    };
+
+    const safeLoader = loaderNameMap[loader] ? loader : 'vanilla';
+    const loaderIcon = loaderIconMap[safeLoader] || loaderIconMap.vanilla;
+
+    const iconEl = document.getElementById('loaderIcon');
+    const loaderNameEl = document.getElementById('loaderName');
+    const loaderVersionEl = document.getElementById('loaderVersion');
+    const metaWrapEl = document.getElementById('launchMeta');
+
+    iconEl.src = resolveAppAsset(loaderIcon);
+    iconEl.alt = `${safeLoader} icon`;
+    iconEl.onerror = () => {
+      iconEl.onerror = null;
+      iconEl.src = resolveAppAsset(loaderIconMap.vanilla);
+    };
+    
+    // Add pink hue to misc icon
+    if (loader === 'misc') {
+      iconEl.style.filter = 'hue-rotate(140deg) saturate(1.5) brightness(1.3)';
+    }
+    
+    // Use modpack name if provided, otherwise use loader name
+    loaderNameEl.textContent = modpackName || safeLoader;
+    loaderNameEl.style.color = '#ffffff';
+    loaderVersionEl.textContent = gameVersion || '';
+    loaderVersionEl.style.color = '#ffffff';
+
+    if (!gameVersion) {
+      loaderVersionEl.style.display = 'none';
+    }
+  </script>
+</body>
+</html>

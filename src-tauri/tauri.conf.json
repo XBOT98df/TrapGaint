@@ -1,0 +1,85 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "TrapGaint",
+  "version": "1.0.1",
+  "identifier": "com.trapgaint.client",
+  "build": {
+    "beforeDevCommand": "npm run dev:client",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist/public",
+    "devUrl": "http://localhost:5173"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "fullscreen": false,
+        "height": 800,
+        "resizable": true,
+        "title": "TrapGaint",
+        "width": 1700,
+        "minWidth": 1000,
+        "minHeight": 600,
+        "decorations": true,
+        "theme": "Dark",
+        "transparent": false,
+        "titleBarStyle": "Overlay",
+        "hiddenTitle": true,
+        "label": "main",
+        "backgroundColor": "#000000",
+        "visible": false,
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; img-src 'self' asset: https: data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https:; connect-src 'self' https: wss:; font-src 'self' data: https://fonts.gstatic.com https://api.fontshare.com https://fonts.googleapis.com https:; media-src 'self' blob: mediastream:; worker-src 'self' blob:",
+      "assetProtocol": {
+        "enable": true,
+        "scope": [
+          "**"
+        ]
+      }
+    }
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://github.com/XBOT98df/TrapGaint/releases/latest/download/latest.json"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEIwMTM5NEZGRTI1M0REMEQKUldRTjNWUGkvNVFUc1Bwc25EbmtpdGE5U2hXdUd5Q00vaG1Sc0JzMngrTDYyRDY5UWxPNUZtUlQK",
+      "windows": {
+        "installMode": "passive"
+      }
+    }
+  },
+  "bundle": {
+    "active": true,
+    "resources": [
+      "resources/libglfw-patched.dylib",
+      "resources/legacy-authlib-override.jar",
+      "resources/dragon-skins-agent.jar",
+      "resources/capes"
+    ],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "targets": "all",
+    "macOS": {
+      "minimumSystemVersion": "10.13"
+    },
+    "windows": {
+      "webviewInstallMode": {
+        "type": "embedBootstrapper",
+        "silent": true
+      },
+      "allowDowngrades": true
+    },
+    "shortDescription": "Minecraft Launcher",
+    "longDescription": "A modern Minecraft launcher with mod support",
+    "createUpdaterArtifacts": true
+  }
+}

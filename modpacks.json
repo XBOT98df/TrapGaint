@@ -1,0 +1,112 @@
+{
+  "modpacks": [
+    {
+      "id": "performance-plus",
+      "name": "Performance+",
+      "description": "Maximum FPS optimization pack",
+      "version": "1.0.0",
+      "mc_version": "1.20.1",
+      "icon": "/performance-logo.png",
+      "mods": [
+        {
+          "name": "fabric-api",
+          "project_id": "P7dR8mSH",
+          "version_id": "",
+          "required": true
+        },
+        {
+          "name": "sodium",
+          "project_id": "AANobbMI",
+          "version_id": "",
+          "required": true
+        },
+        {
+          "name": "lithium",
+          "project_id": "gvQqBUqZ",
+          "version_id": "",
+          "required": true
+        },
+        {
+          "name": "ferritecore",
+          "project_id": "uXXizFIs",
+          "version_id": "",
+          "required": true
+        },
+        {
+          "name": "dynamic-fps",
+          "project_id": "LQ3K71Q1",
+          "version_id": "",
+          "required": true
+        },
+        {
+          "name": "entityculling",
+          "project_id": "NNAgCjsB",
+          "version_id": "",
+          "required": true
+        }
+      ]
+    },
+    {
+      "id": "visual-enhanced",
+      "name": "Visual Enhanced",
+      "description": "Beautiful graphics with shaders",
+      "version": "1.0.0",
+      "mc_version": "1.20.1",
+      "icon": "/visual-logo.png",
+      "mods": [
+        {
+          "name": "fabric-api",
+          "project_id": "P7dR8mSH",
+          "version_id": "",
+          "required": true
+        },
+        {
+          "name": "sodium",
+          "project_id": "AANobbMI",
+          "version_id": "",
+          "required": true
+        },
+        {
+          "name": "iris",
+          "project_id": "YL57xq9U",
+          "version_id": "",
+          "required": true
+        },
+        {
+          "name": "lithium",
+          "project_id": "gvQqBUqZ",
+          "version_id": "",
+          "required": true
+        }
+      ]
+    },
+    {
+      "id": "vanilla-optimized",
+      "name": "Vanilla Optimized",
+      "description": "Pure vanilla with performance boost",
+      "version": "1.0.0",
+      "mc_version": "1.20.1",
+      "icon": "/vanilla-logo.png",
+      "mods": [
+        {
+          "name": "fabric-api",
+          "project_id": "P7dR8mSH",
+          "version_id": "",
+          "required": true
+        },
+        {
+          "name": "sodium",
+          "project_id": "AANobbMI",
+          "version_id": "",
+          "required": true
+        },
+        {
+          "name": "lithium",
+          "project_id": "gvQqBUqZ",
+          "version_id": "",
+          "required": true
+        }
+      ]
+    }
+  ]
+}

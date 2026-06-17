@@ -1,0 +1,17 @@
+{
+  "name": "friend-notification-worker",
+  "version": "1.0.0",
+  "description": "Cloudflare Worker for Xbox Live friend request notifications",
+  "main": "index.js",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev",
+    "tail": "wrangler tail"
+  },
+  "keywords": ["cloudflare", "worker", "xbox", "notifications"],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "wrangler": "^3.0.0"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "version": "2.0.68",
+  "notes": "Dragon Client v2.0.68",
+  "pub_date": "2026-03-10T16:55:00Z",
+  "platforms": {
+    "darwin-aarch64": {
+      "signature": "",
+      "url": "https://github.com/dhhd67807-lgtm/Block-Launcher/releases/download/v2.0.68/Dragon Client_2.0.68_aarch64.pkg"
+    }
+  }
+}

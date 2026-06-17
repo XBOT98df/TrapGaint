@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dragon Voice Chat</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #000;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            color: white;
+            overflow: hidden;
+        }
+        
+        /* Participants Grid */
+        .participants-grid {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2px;
+            background: #000;
+            padding: 2px;
+        }
+        
+        .participant {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            min-height: 250px;
+        }
+        
+        .participant.active {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+            50% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+        }
+        
+        .avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            margin-bottom: 12px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .participant-name {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .participant-status {
+            font-size: 12px;
+            opacity: 0.6;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 4px;
+        }
+        
+        .status-indicator.online {
+            background: #10b981;
+            animation: blink 2s infinite;
+        }
+        
+        .status-indicator.calling {
+            background: #f59e0b;
+            animation: blink 1s infinite;
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        
+        /* Controls Bar */
+        .controls-bar {
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(10px);
+            padding: 16px;
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        button {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            font-size: 20px;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        button:hover {
+            transform: scale(1.1);
+        }
+        
+        button:active {
+            transform: scale(0.95);
+        }
+        
+        .mute-btn {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        
+        .mute-btn.muted {
+            background: #ef4444;
+            color: white;
+        }
+        
+        .end-btn {
+            background: #ef4444;
+            color: white;
+        }
+        
+        .close-btn {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            width: 32px;
+            height: 32px;
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 18px;
+            z-index: 100;
+        }
+        
+        .close-btn:hover {
+            background: rgba(239, 68, 68, 0.8);
+        }
+        
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="close-btn" onclick="closeWindow()">✕</div>
+    
+    <div class="participants-grid">
+        <!-- Local User -->
+        <div class="participant active" id="local-participant">
+            <div class="avatar">🎤</div>
+            <div class="participant-name" id="local-name">You</div>
+            <div class="participant-status">
+                <span class="status-indicator online"></span>
+                <span id="local-status">Connected</span>
+            </div>
+        </div>
+        
+        <!-- Remote User -->
+        <div class="participant" id="remote-participant">
+            <div class="avatar">📞</div>
+            <div class="participant-name" id="remote-name">Connecting...</div>
+            <div class="participant-status">
+                <span class="status-indicator calling"></span>
+                <span id="remote-status">Calling...</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="controls-bar">
+        <button class="mute-btn" id="mute-btn" onclick="toggleMute()" title="Mute/Unmute">
+            🎤
+        </button>
+        <button class="end-btn" onclick="endCall()" title="End Call">
+            📞
+        </button>
+    </div>
+    
+    <audio id="remote-audio" autoplay></audio>
+    
+    <script type="module">
+        // Import Supabase
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+        
+        const supabase = createClient(
+            'https://oafrooyagtdnzqtdqxtr.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9hZnJvb3lhZ3RkbnpxdGRxeHRyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE2NDc4NDYsImV4cCI6MjA4NzIyMzg0Nn0.6ujY-6Iuyha7VCNh-Xh8Lu0M_-x0FJGk61duJM84r14'
+        );
+        
+        // Get URL parameters
+        const params = new URLSearchParams(window.location.search);
+        const callerId = params.get('caller');
+        const callerName = params.get('callerName');
+        const receiverId = params.get('receiver');
+        const receiverName = params.get('receiverName');
+        const isCaller = params.get('isCaller') === 'true';
+        
+        console.log('[Voice Chat] Initializing:', { isCaller, callerId, receiverId });
+        
+        let peerConnection = null;
+        let localStream = null;
+        let isMuted = false;
+        let myChannel = null;
+        let theirChannel = null;
+        let iceCandidatesQueue = [];
+        
+        // Use multiple public STUN/TURN servers for better connectivity
+        const iceServers = {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' },
+                { urls: 'stun:stun2.l.google.com:19302' },
+                { urls: 'stun:stun3.l.google.com:19302' },
+                { urls: 'stun:stun4.l.google.com:19302' },
+                // Metered TURN servers (free tier)
+                {
+                    urls: 'turn:openrelay.metered.ca:80',
+                    username: 'openrelayproject',
+                    credential: 'openrelayproject'
+                },
+                {
+                    urls: 'turn:openrelay.metered.ca:443',
+                    username: 'openrelayproject',
+                    credential: 'openrelayproject'
+                },
+                {
+                    urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+                    username: 'openrelayproject',
+                    credential: 'openrelayproject'
+                }
+            ],
+            iceCandidatePoolSize: 10
+        };
+        
+        // Set up UI
+        document.getElementById('local-name').textContent = isCaller ? callerName : receiverName;
+        document.getElementById('remote-name').textContent = isCaller ? receiverName : callerName;
+        
+        // Subscribe to channels
+        const myUserId = isCaller ? callerId : receiverId;
+        const theirUserId = isCaller ? receiverId : callerId;
+        
+        console.log('[Voice Chat] My ID:', myUserId, 'Their ID:', theirUserId);
+        
+        const callId = `call_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        console.log('[Voice Chat] Call ID:', callId);
+        
+        let receiverReady = false;
+        let callerReadyToSend = false;
+        
+        // My channel for receiving
+        myChannel = supabase.channel(`voice_call_${myUserId}`)
+            .on('broadcast', { event: 'call_signal' }, async (payload) => {
+                await handleSignal(payload.payload);
+            })
+            .subscribe(async (status) => {
+                if (status === 'SUBSCRIBED') {
+                    console.log('[Voice Chat] ✓ My channel subscribed');
+                    if (isCaller) {
+                        // Caller starts immediately
+                        await prepareCaller();
+                    } else {
+                        // Receiver just waits for offer
+                        console.log('[Voice Chat] Receiver waiting for offer...');
+                        await prepareToAnswer();
+                    }
+                }
+            });
+        
+        // Their channel for sending
+        theirChannel = supabase.channel(`voice_call_${theirUserId}`)
+            .subscribe((status) => {
+                console.log('[Voice Chat] Their channel:', status);
+            });
+        
+        async function prepareCaller() {
+            try {
+                console.log('[Voice Chat] ═══ Preparing as CALLER ═══');
+                console.log('[Voice Chat] Requesting microphone access...');
+                localStream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } 
+                });
+                console.log('[Voice Chat] ✓ Microphone access granted');
+                
+                // Wait a bit for receiver to be ready
+                console.log('[Voice Chat] Waiting 2 seconds for receiver...');
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                // Start call
+                await startCall();
+            } catch (err) {
+                console.error('[Voice Chat] ✗ Microphone error:', err);
+                alert('Failed to access microphone: ' + err.message);
+                window.close();
+            }
+        }
+        
+        async function startCall() {
+            try {
+                console.log('[Voice Chat] ═══ Starting call as CALLER ═══');
+                
+                document.getElementById('local-status').textContent = 'Calling...';
+                
+                console.log('[Voice Chat] Creating peer connection...');
+                peerConnection = new RTCPeerConnection(iceServers);
+                setupPeerConnection();
+                
+                console.log('[Voice Chat] Adding local tracks...');
+                localStream.getTracks().forEach(track => {
+                    peerConnection.addTrack(track, localStream);
+                    console.log('[Voice Chat] Added track:', track.kind);
+                });
+                
+                console.log('[Voice Chat] Creating offer...');
+                const offer = await peerConnection.createOffer({
+                    offerToReceiveAudio: true
+                });
+                console.log('[Voice Chat] ✓ Offer created');
+                
+                console.log('[Voice Chat] Setting local description...');
+                await peerConnection.setLocalDescription(offer);
+                console.log('[Voice Chat] ✓ Local description set');
+                
+                // Wait for ICE gathering to complete or timeout after 3 seconds
+                console.log('[Voice Chat] Waiting for ICE candidates...');
+                await new Promise((resolve) => {
+                    if (peerConnection.iceGatheringState === 'complete') {
+                        resolve();
+                    } else {
+                        const timeout = setTimeout(resolve, 3000);
+                        peerConnection.addEventListener('icegatheringstatechange', () => {
+                            if (peerConnection.iceGatheringState === 'complete') {
+                                clearTimeout(timeout);
+                                resolve();
+                            }
+                        });
+                    }
+                });
+                console.log('[Voice Chat] ICE gathering state:', peerConnection.iceGatheringState);
+                
+                console.log('[Voice Chat] → Sending offer to receiver');
+                await sendSignal({ type: 'call_offer', offer, callerId, callerName, callId });
+                console.log('[Voice Chat] ✓ Offer sent, waiting for answer...');
+                
+                document.getElementById('local-status').textContent = 'Connected';
+            } catch (err) {
+                console.error('[Voice Chat] ✗ Start call error:', err);
+                alert('Failed to start call: ' + err.message);
+                window.close();
+            }
+        }
+        
+        async function prepareToAnswer() {
+            try {
+                console.log('[Voice Chat] ═══ Preparing to answer as RECEIVER ═══');
+                console.log('[Voice Chat] Requesting microphone access...');
+                localStream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } 
+                });
+                console.log('[Voice Chat] ✓ Microphone access granted');
+                
+                document.getElementById('local-status').textContent = 'Ready';
+                console.log('[Voice Chat] ✓ Ready to receive offer');
+            } catch (err) {
+                console.error('[Voice Chat] ✗ Microphone error:', err);
+                alert('Failed to access microphone: ' + err.message);
+                window.close();
+            }
+        }
+        
+        function setupPeerConnection() {
+            peerConnection.ontrack = (event) => {
+                console.log('[Voice Chat] ✓ Remote track received');
+                const audio = document.getElementById('remote-audio');
+                audio.srcObject = event.streams[0];
+                audio.play().then(() => {
+                    console.log('[Voice Chat] ✓ Audio playing');
+                }).catch(err => {
+                    console.error('[Voice Chat] ✗ Audio play error:', err);
+                });
+                updateRemoteStatus('Connected');
+            };
+            
+            peerConnection.onicecandidate = (event) => {
+                if (event.candidate) {
+                    console.log('[Voice Chat] → Sending ICE candidate:', event.candidate.type);
+                    sendSignal({ type: 'ice_candidate', candidate: event.candidate });
+                } else {
+                    console.log('[Voice Chat] ✓ All ICE candidates sent');
+                }
+            };
+            
+            peerConnection.onicegatheringstatechange = () => {
+                console.log('[Voice Chat] ICE gathering state:', peerConnection.iceGatheringState);
+            };
+            
+            peerConnection.oniceconnectionstatechange = () => {
+                console.log('[Voice Chat] ICE connection state:', peerConnection.iceConnectionState);
+                if (peerConnection.iceConnectionState === 'connected' || 
+                    peerConnection.iceConnectionState === 'completed') {
+                    console.log('[Voice Chat] ✓ ICE connection established!');
+                    updateRemoteStatus('Connected');
+                } else if (peerConnection.iceConnectionState === 'failed') {
+                    console.error('[Voice Chat] ✗ ICE connection failed');
+                    alert('Connection failed. Please check your network and try again.');
+                    window.close();
+                } else if (peerConnection.iceConnectionState === 'disconnected') {
+                    console.warn('[Voice Chat] ⚠ ICE connection disconnected');
+                }
+            };
+            
+            peerConnection.onconnectionstatechange = () => {
+                console.log('[Voice Chat] Connection state:', peerConnection.connectionState);
+                if (peerConnection.connectionState === 'connected') {
+                    console.log('[Voice Chat] ✓ Peer connection established!');
+                } else if (peerConnection.connectionState === 'failed') {
+                    console.error('[Voice Chat] ✗ Peer connection failed');
+                }
+            };
+            
+            peerConnection.onsignalingstatechange = () => {
+                console.log('[Voice Chat] Signaling state:', peerConnection.signalingState);
+            };
+        }
+        
+        function updateRemoteStatus(status) {
+            document.getElementById('remote-status').textContent = status;
+            document.getElementById('remote-participant').classList.add('active');
+            document.querySelector('#remote-participant .status-indicator').classList.remove('calling');
+            document.querySelector('#remote-participant .status-indicator').classList.add('online');
+        }
+        
+        async function handleSignal(signal) {
+            console.log('[Voice Chat] ← Signal received:', signal.type);
+            
+            try {
+                if (signal.type === 'call_offer') {
+                    console.log('[Voice Chat] Processing call offer...');
+                    peerConnection = new RTCPeerConnection(iceServers);
+                    setupPeerConnection();
+                    
+                    console.log('[Voice Chat] Setting remote description (offer)...');
+                    await peerConnection.setRemoteDescription(new RTCSessionDescription(signal.offer));
+                    console.log('[Voice Chat] ✓ Remote description set');
+                    
+                    console.log('[Voice Chat] Adding local tracks...');
+                    localStream.getTracks().forEach(track => {
+                        peerConnection.addTrack(track, localStream);
+                        console.log('[Voice Chat] Added track:', track.kind);
+                    });
+                    
+                    // Process queued ICE candidates
+                    if (iceCandidatesQueue.length > 0) {
+                        console.log('[Voice Chat] Processing', iceCandidatesQueue.length, 'queued ICE candidates');
+                        for (const candidate of iceCandidatesQueue) {
+                            await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+                        }
+                        iceCandidatesQueue = [];
+                    }
+                    
+                    console.log('[Voice Chat] Creating answer...');
+                    const answer = await peerConnection.createAnswer();
+                    await peerConnection.setLocalDescription(answer);
+                    console.log('[Voice Chat] ✓ Local description set (answer)');
+                    
+                    // Wait for ICE gathering
+                    console.log('[Voice Chat] Waiting for ICE candidates...');
+                    await new Promise((resolve) => {
+                        if (peerConnection.iceGatheringState === 'complete') {
+                            resolve();
+                        } else {
+                            const timeout = setTimeout(resolve, 3000);
+                            peerConnection.addEventListener('icegatheringstatechange', () => {
+                                if (peerConnection.iceGatheringState === 'complete') {
+                                    clearTimeout(timeout);
+                                    resolve();
+                                }
+                            });
+                        }
+                    });
+                    console.log('[Voice Chat] ICE gathering state:', peerConnection.iceGatheringState);
+                    
+                    console.log('[Voice Chat] → Sending answer');
+                    await sendSignal({ type: 'call_answer', answer });
+                    document.getElementById('local-status').textContent = 'Connected';
+                    
+                } else if (signal.type === 'call_answer') {
+                    console.log('[Voice Chat] Processing call answer...');
+                    console.log('[Voice Chat] Setting remote description (answer)...');
+                    await peerConnection.setRemoteDescription(new RTCSessionDescription(signal.answer));
+                    console.log('[Voice Chat] ✓ Remote description set');
+                    updateRemoteStatus('Connected');
+                    
+                } else if (signal.type === 'ice_candidate') {
+                    console.log('[Voice Chat] ← Received ICE candidate');
+                    if (peerConnection && peerConnection.remoteDescription) {
+                        await peerConnection.addIceCandidate(new RTCIceCandidate(signal.candidate));
+                        console.log('[Voice Chat] ✓ ICE candidate added');
+                    } else {
+                        console.log('[Voice Chat] Queueing ICE candidate (no remote description yet)');
+                        iceCandidatesQueue.push(signal.candidate);
+                    }
+                    
+                } else if (signal.type === 'call_ended' || signal.type === 'call_rejected') {
+                    console.log('[Voice Chat] Call ended by remote');
+                    window.close();
+                }
+            } catch (err) {
+                console.error('[Voice Chat] ✗ Signal handling error:', err);
+            }
+        }
+        
+        async function sendSignal(signal) {
+            try {
+                await theirChannel.send({ 
+                    type: 'broadcast', 
+                    event: 'call_signal', 
+                    payload: signal 
+                });
+                console.log('[Voice Chat] Signal sent:', signal.type);
+            } catch (err) {
+                console.error('[Voice Chat] Send error:', err);
+            }
+        }
+        
+        async function endCall() {
+            console.log('[Voice Chat] Ending call');
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+            }
+            if (peerConnection) {
+                peerConnection.close();
+            }
+            await sendSignal({ type: 'call_ended' });
+            await new Promise(resolve => setTimeout(resolve, 100));
+            if (myChannel) myChannel.unsubscribe();
+            if (theirChannel) theirChannel.unsubscribe();
+            window.close();
+        }
+        
+        async function closeWindow() {
+            await endCall();
+        }
+        
+        window.toggleMute = function() {
+            if (!localStream) return;
+            const audioTrack = localStream.getAudioTracks()[0];
+            if (audioTrack) {
+                audioTrack.enabled = !audioTrack.enabled;
+                isMuted = !audioTrack.enabled;
+                document.getElementById('mute-btn').classList.toggle('muted', isMuted);
+                document.getElementById('mute-btn').textContent = isMuted ? '🔇' : '🎤';
+                document.getElementById('local-status').textContent = isMuted ? 'Muted' : 'Connected';
+            }
+        };
+        
+        window.endCall = endCall;
+        window.closeWindow = closeWindow;
+    </script>
+</body>
+</html>

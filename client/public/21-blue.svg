@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1440" height="1440" viewBox="0 0 1440 1440" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <defs>
+    <filter id="blue-theme">
+      <feColorMatrix type="saturate" values="1.1"/>
+    </filter>
+  </defs>
+  <image width="1440" height="1440" xlink:href="/21.png" filter="url(#blue-theme)"/>
+</svg>

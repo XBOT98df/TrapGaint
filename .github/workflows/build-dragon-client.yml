@@ -1,0 +1,169 @@
+name: Build Dragon Client Multi-Version
+
+on:
+  push:
+    branches: [ main, master ]
+    paths:
+      - 'dragon-client-mod/**'
+  workflow_dispatch:
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Get version
+        id: version
+        run: |
+          # Get latest tag or start at 1.0.0
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v1.0.0")
+          VERSION=${LATEST_TAG#v}
+          
+          # Increment patch version
+          IFS='.' read -r major minor patch <<< "$VERSION"
+          NEW_PATCH=$((patch + 1))
+          NEW_VERSION="${major}.${minor}.${NEW_PATCH}"
+          
+          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "New version: $NEW_VERSION"
+
+  build:
+    needs: version
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        minecraft: ['1.21.1', '1.21.3', '1.21.4', '1.21.6', '1.21.7', '1.21.8', '1.21.10', '1.21.11']
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+      
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@v3
+      
+      - name: Update version in gradle.properties
+        run: |
+          cd dragon-client-mod/versions/${{ matrix.minecraft }}-fabric
+          sed -i "s/mod_version=.*/mod_version=${{ needs.version.outputs.version }}/" gradle.properties
+      
+      - name: Build with Gradle
+        run: |
+          cd dragon-client-mod
+          chmod +x gradlew
+          ./gradlew :${{ matrix.minecraft }}-fabric:build
+      
+      - name: Rename JAR
+        run: |
+          cd dragon-client-mod/versions/${{ matrix.minecraft }}-fabric/build/libs
+          # Only rename if the file doesn't already have the correct name
+          if [ ! -f "dragon-client-${{ matrix.minecraft }}-${{ needs.version.outputs.version }}.jar" ]; then
+            mv dragon-client-${{ matrix.minecraft }}-*.jar dragon-client-${{ matrix.minecraft }}-${{ needs.version.outputs.version }}.jar
+          fi
+      
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dragon-client-${{ matrix.minecraft }}
+          path: dragon-client-mod/versions/${{ matrix.minecraft }}-fabric/build/libs/dragon-client-${{ matrix.minecraft }}-${{ needs.version.outputs.version }}.jar
+
+  release:
+    needs: [version, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      
+      - name: Create version manifest
+        run: |
+          cat > artifacts/versions.json << EOF
+          {
+            "version": "${{ needs.version.outputs.version }}",
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "minecraft_versions": {
+              "1.21.1": {
+                "url": "https://github.com/${{ github.repository }}/releases/download/v${{ needs.version.outputs.version }}/dragon-client-1.21.1-${{ needs.version.outputs.version }}.jar",
+                "sha256": "$(sha256sum artifacts/dragon-client-1.21.1/dragon-client-1.21.1-${{ needs.version.outputs.version }}.jar | cut -d' ' -f1)"
+              },
+              "1.21.3": {
+                "url": "https://github.com/${{ github.repository }}/releases/download/v${{ needs.version.outputs.version }}/dragon-client-1.21.3-${{ needs.version.outputs.version }}.jar",
+                "sha256": "$(sha256sum artifacts/dragon-client-1.21.3/dragon-client-1.21.3-${{ needs.version.outputs.version }}.jar | cut -d' ' -f1)"
+              },
+              "1.21.4": {
+                "url": "https://github.com/${{ github.repository }}/releases/download/v${{ needs.version.outputs.version }}/dragon-client-1.21.4-${{ needs.version.outputs.version }}.jar",
+                "sha256": "$(sha256sum artifacts/dragon-client-1.21.4/dragon-client-1.21.4-${{ needs.version.outputs.version }}.jar | cut -d' ' -f1)"
+              },
+              "1.21.6": {
+                "url": "https://github.com/${{ github.repository }}/releases/download/v${{ needs.version.outputs.version }}/dragon-client-1.21.6-${{ needs.version.outputs.version }}.jar",
+                "sha256": "$(sha256sum artifacts/dragon-client-1.21.6/dragon-client-1.21.6-${{ needs.version.outputs.version }}.jar | cut -d' ' -f1)"
+              },
+              "1.21.7": {
+                "url": "https://github.com/${{ github.repository }}/releases/download/v${{ needs.version.outputs.version }}/dragon-client-1.21.7-${{ needs.version.outputs.version }}.jar",
+                "sha256": "$(sha256sum artifacts/dragon-client-1.21.7/dragon-client-1.21.7-${{ needs.version.outputs.version }}.jar | cut -d' ' -f1)"
+              },
+              "1.21.8": {
+                "url": "https://github.com/${{ github.repository }}/releases/download/v${{ needs.version.outputs.version }}/dragon-client-1.21.8-${{ needs.version.outputs.version }}.jar",
+                "sha256": "$(sha256sum artifacts/dragon-client-1.21.8/dragon-client-1.21.8-${{ needs.version.outputs.version }}.jar | cut -d' ' -f1)"
+              },
+              "1.21.10": {
+                "url": "https://github.com/${{ github.repository }}/releases/download/v${{ needs.version.outputs.version }}/dragon-client-1.21.10-${{ needs.version.outputs.version }}.jar",
+                "sha256": "$(sha256sum artifacts/dragon-client-1.21.10/dragon-client-1.21.10-${{ needs.version.outputs.version }}.jar | cut -d' ' -f1)"
+              },
+              "1.21.11": {
+                "url": "https://github.com/${{ github.repository }}/releases/download/v${{ needs.version.outputs.version }}/dragon-client-1.21.11-${{ needs.version.outputs.version }}.jar",
+                "sha256": "$(sha256sum artifacts/dragon-client-1.21.11/dragon-client-1.21.11-${{ needs.version.outputs.version }}.jar | cut -d' ' -f1)"
+              }
+            }
+          }
+          EOF
+      
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ needs.version.outputs.version }}
+          name: Dragon Client v${{ needs.version.outputs.version }}
+          body: |
+            ## Dragon Client v${{ needs.version.outputs.version }}
+            
+            Auto-generated release with builds for Minecraft 1.21.1 through 1.21.11
+            
+            ### Supported Versions
+            - Minecraft 1.21.1
+            - Minecraft 1.21.3
+            - Minecraft 1.21.4
+            - Minecraft 1.21.6
+            - Minecraft 1.21.7
+            - Minecraft 1.21.8
+            - Minecraft 1.21.10
+            - Minecraft 1.21.11
+            
+            ### Installation
+            Download the JAR for your Minecraft version and place it in your mods folder.
+          files: |
+            artifacts/dragon-client-1.21.1/dragon-client-1.21.1-${{ needs.version.outputs.version }}.jar
+            artifacts/dragon-client-1.21.3/dragon-client-1.21.3-${{ needs.version.outputs.version }}.jar
+            artifacts/dragon-client-1.21.4/dragon-client-1.21.4-${{ needs.version.outputs.version }}.jar
+            artifacts/dragon-client-1.21.6/dragon-client-1.21.6-${{ needs.version.outputs.version }}.jar
+            artifacts/dragon-client-1.21.7/dragon-client-1.21.7-${{ needs.version.outputs.version }}.jar
+            artifacts/dragon-client-1.21.8/dragon-client-1.21.8-${{ needs.version.outputs.version }}.jar
+            artifacts/dragon-client-1.21.10/dragon-client-1.21.10-${{ needs.version.outputs.version }}.jar
+            artifacts/dragon-client-1.21.11/dragon-client-1.21.11-${{ needs.version.outputs.version }}.jar
+            artifacts/versions.json
+          draft: false
+          prerelease: false

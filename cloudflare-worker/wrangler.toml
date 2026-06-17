@@ -1,0 +1,13 @@
+name = "friend-notification-worker"
+main = "index.js"
+compatibility_date = "2024-01-01"
+
+# KV Namespace for storing pending friend requests
+[[kv_namespaces]]
+binding = "FRIEND_REQUESTS"
+id = "62116abeb36d443aa8ae73c960a23b8d"
+
+# Uncomment and configure if you want a custom domain
+# routes = [
+#   { pattern = "friend-api.yourdomain.com/*", zone_name = "yourdomain.com" }
+# ]

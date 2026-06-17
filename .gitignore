@@ -1,0 +1,27 @@
+node_modules
+node_modules_old
+dist
+.DS_Store
+server/public
+vite.config.ts.*
+*.tar.gz
+.local/
+src-tauri/target/
+src-tauri/gen/
+*.log
+
+# Environment variables (contains GitHub token)
+.env
+.env.local
+
+# Gradle (lunar-agent)
+lunar-agent/.gradle/
+lunar-agent/build/
+.gradle/*.hprof
+*.hprof
+lunar-agent/bin/
+dragon-client-mod/
+*.pkg
+*.msi
+*.zip
+src-tauri/target
