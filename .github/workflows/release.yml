@@ -204,13 +204,13 @@ jobs:
           for platform in darwin-x86_64 darwin-aarch64 windows-x86_64; do
             case $platform in
               darwin-x86_64)
-                file="Dragon Client_x64.app.tar.gz"
+                file="TrapGaint_x64.app.tar.gz"
                 ;;
               darwin-aarch64)
-                file="Dragon Client_aarch64.app.tar.gz"
+                file="TrapGaint_aarch64.app.tar.gz"
                 ;;
               windows-x86_64)
-                file="Dragon Client_x64_en-US.msi.zip"
+                file="TrapGaint_1.0.1_x64_en-US.msi.zip"
                 ;;
             esac
             
@@ -218,7 +218,7 @@ jobs:
             
             if [ -f "$sig_file" ]; then
               signature=$(cat "$sig_file")
-              printf '{\n  "version": "%s",\n  "notes": "Dragon Client v%s",\n  "pub_date": "%s",\n  "platforms": {\n    "%s": {\n      "signature": "%s",\n      "url": "%s"\n    }\n  }\n}\n' \
+              printf '{\n  "version": "%s",\n  "notes": "TrapGaint v%s",\n  "pub_date": "%s",\n  "platforms": {\n    "%s": {\n      "signature": "%s",\n      "url": "%s"\n    }\n  }\n}\n' \
                 "${VERSION}" \
                 "${VERSION}" \
                 "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
@@ -234,7 +234,7 @@ jobs:
           # Upload updater JSONs to release
           for json in *.json; do
             if [ -f "$json" ]; then
-              gh release upload "v${VERSION}" "$json" --clobber
+              gh release upload "v${VERSION}" "$json" --repo ${{ github.repository }} --clobber
               echo "Uploaded $json"
             fi
           done
@@ -264,7 +264,7 @@ jobs:
           if ls -1 >/dev/null 2>&1; then
             sha256sum * | sort > SHA256SUMS.txt
             cat SHA256SUMS.txt
-            gh release upload "v${VERSION}" "SHA256SUMS.txt" --clobber
+            gh release upload "v${VERSION}" "SHA256SUMS.txt" --repo ${{ github.repository }} --clobber
             echo "Uploaded SHA256SUMS.txt"
           else
             echo "No release files found for checksum generation after filtering."
