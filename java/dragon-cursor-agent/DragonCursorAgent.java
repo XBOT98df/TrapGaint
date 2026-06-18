@@ -47,7 +47,6 @@ public class DragonCursorAgent {
             .transform((builder, typeDescription, classLoader, module, protectionDomain) ->
                 builder
                     .visit(Advice.to(GlfwShowWindowAdvice.class).on(ElementMatchers.named("glfwShowWindow")))
-                    .visit(Advice.to(GlfwSwapBuffersAdvice.class).on(ElementMatchers.named("glfwSwapBuffers")))
                     .visit(Advice.to(GlfwSetCursorAdvice.class).on(ElementMatchers.named("glfwSetCursor")))
                     .visit(Advice.to(GlfwCreateStandardCursorAdvice.class).on(ElementMatchers.named("glfwCreateStandardCursor")))
                     .visit(Advice.to(GlfwDestroyCursorAdvice.class).on(ElementMatchers.named("glfwDestroyCursor")))
@@ -117,8 +116,7 @@ public class DragonCursorAgent {
 
     /**
      * Create a GLFW cursor using reflection against LWJGL's GLFWImage.
-     * This MUST be called on the GLFW main thread (i.e. from within glfwSwapBuffers
-     * or another GLFW callback that is already on the main thread on Windows).
+     * This MUST be called on the GLFW main thread, from an existing GLFW callback.
      */
     public static long createCursorFromBuffer(Class<?> glfwClass, ByteBuffer pixels, int w, int h) {
         try {
@@ -184,24 +182,15 @@ public class DragonCursorAgent {
         }
     }
 
-    // Advice: remember the window during creation. Cursor creation is deferred
-    // until the first buffer swap so Windows can finish showing the initial frame.
+    // Advice: create the custom cursor when GLFW shows the window. Do not hook
+    // glfwSwapBuffers; instrumenting the present path can leave Windows on a
+    // black first frame in some Minecraft/LWJGL builds.
     // ─────────────────────────────────────────────────────────────────────────
     public static class GlfwShowWindowAdvice {
         @Advice.OnMethodEnter
         public static void onShowWindow(@Advice.Argument(0) long windowHandle) {
             DragonCursorAgent.lastWindowHandle = windowHandle;
-        }
-    }
-
-    // Advice: initialize after Minecraft has started presenting frames.
-    // ─────────────────────────────────────────────────────────────────────────
-    public static class GlfwSwapBuffersAdvice {
-        @Advice.OnMethodExit
-        public static void onSwapBuffers(@Advice.Argument(0) long windowHandle) {
-            if (DragonCursorAgent.cursorState == 0) {
-                DragonCursorAgent.initializeCursor(windowHandle);
-            }
+            DragonCursorAgent.initializeCursor(windowHandle);
         }
     }
 
