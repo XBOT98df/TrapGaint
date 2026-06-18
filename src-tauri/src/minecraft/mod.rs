@@ -5782,8 +5782,8 @@ impl MinecraftLauncher {
         args.extend([
             format!("-Djava.library.path={}", natives_dir_arg),
             format!("-Dorg.lwjgl.librarypath={}", natives_dir_arg),
-            "-Dminecraft.launcher.brand=lapetus-launcher".to_string(),
-            "-Dminecraft.launcher.version=2.0".to_string(),
+            "-Dminecraft.launcher.brand=trapgaint-launcher".to_string(),
+            "-Dminecraft.launcher.version=1.0".to_string(),
             // LWJGL PERFORMANCE - Safe optimizations
             "-Dorg.lwjgl.opengl.Display.allowSoftwareOpenGL=true".to_string(),
             "-Dorg.lwjgl.util.NoChecks=true".to_string(),

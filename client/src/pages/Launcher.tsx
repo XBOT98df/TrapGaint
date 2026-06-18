@@ -7344,7 +7344,7 @@ export default function Launcher() {
                             className={`grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 cursor-none transition-opacity duration-200 ${
                               showModBrowserPageSkeleton ? 'opacity-35' : 'opacity-100'
                             }`}
-                            style={{ cursor: 'none', gridAutoRows: 'minmax(100px, auto)' }}
+                            style={{ cursor: 'none', gridAutoRows: 'minmax(130px, auto)' }}
                           >
                           {visibleModBrowserItems.map((mod) => {
                             // Check if mod is already installed with improved matching
@@ -7417,7 +7417,7 @@ export default function Launcher() {
                                 </div>
 
                                 {/* Mod Content - 70% width */}
-                                <div className="flex-1 p-4 flex flex-col justify-between cursor-none">
+                                <div className="flex-1 p-3 flex flex-col justify-between cursor-none gap-2">
                                   {/* Mod Info */}
                                   <div className="cursor-none">
                                     <h3 className="text-white font-semibold text-lg truncate mb-0.5 cursor-none" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>
@@ -7429,9 +7429,9 @@ export default function Launcher() {
                                   </div>
 
                                   {/* Install Button */}
-                                  <div className="relative z-10 flex justify-end cursor-none">
+                                  <div className="relative z-10 flex justify-end cursor-none mt-auto">
                                   {isInstalled ? (
-                                    <span className="h-9 px-6 bg-black rounded-full text-sm text-white font-medium flex items-center cursor-none">
+                                    <span className="h-8 px-4 bg-black rounded-full text-xs text-white font-medium flex items-center cursor-none shrink-0">
                                       Installed
                                     </span>
                                   ) : (
@@ -7440,7 +7440,7 @@ export default function Launcher() {
                                         await handleDownloadMod(mod);
                                       }}
                                       disabled={isDownloadingMod === mod.project_id}
-                                      className="cursor-none h-9 px-6 bg-white hover:bg-zinc-100 disabled:bg-white/50 rounded-full text-sm text-black font-medium transition-colors"
+                                      className="cursor-none h-8 px-4 bg-white hover:bg-zinc-100 disabled:bg-white/50 rounded-full text-xs text-black font-medium transition-colors shrink-0"
                                     >
                                       {isDownloadingMod === mod.project_id ? 'Installing...' : 'Install'}
                                     </button>
@@ -9286,7 +9286,7 @@ export default function Launcher() {
                   </div>
                   
                   {/* Right Column - 3D Preview Only (Transparent, Centered) */}
-                  <div className="flex flex-col items-center justify-center h-full">
+                  <div className="flex flex-col items-center justify-center h-full lg:pl-24 xl:pl-48">
                     <div className="text-center mb-4">
                       <h3 className="text-lg font-bold text-white mb-1">Skin Preview</h3>
                       <p className="text-zinc-400 text-xs">See how your skin will look</p>
