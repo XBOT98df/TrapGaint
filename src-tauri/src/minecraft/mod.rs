@@ -5553,7 +5553,7 @@ impl MinecraftLauncher {
             let cursor_agent_dir = self.game_dir.join("DragonCursor");
             let cursor_agent_dest = cursor_agent_dir.join("dragon-cursor-agent.jar");
             let _ = std::fs::create_dir_all(&cursor_agent_dir);
-            
+
             // Write the cursor image to disk
             let cursor_png_path = cursor_agent_dir.join("cursor.png");
             let b64_data = if b64.contains("base64,") {
@@ -5561,7 +5561,7 @@ impl MinecraftLauncher {
             } else {
                 b64
             };
-            
+
             use base64::{Engine as _, engine::general_purpose};
             match general_purpose::STANDARD.decode(b64_data) {
                 Ok(bytes) => {
@@ -5594,42 +5594,53 @@ impl MinecraftLauncher {
                 }
             }
 
-            // Install cursor agent from bundled resources
-            if !cursor_agent_dest.exists() {
-                // Try to find bundled agent in resources
-                let mut resource_candidates = vec![
-                    self.game_dir.join("dragon-cursor-agent.jar"),
-                    std::env::current_exe()
-                        .unwrap_or_default()
-                        .parent()
-                        .unwrap_or(std::path::Path::new("."))
-                        .join("dragon-cursor-agent.jar"),
-                    std::env::current_exe()
-                        .unwrap_or_default()
-                        .parent()
-                        .unwrap_or(std::path::Path::new("."))
-                        .join("../Resources/dragon-cursor-agent.jar"),
-                ];
-                
-                if let Some(ref path) = options.cursor_agent_jar_path {
-                    resource_candidates.insert(0, std::path::PathBuf::from(path));
-                }
-                
-                for candidate in &resource_candidates {
-                    if candidate.exists() {
-                        if let Err(e) = std::fs::copy(candidate, &cursor_agent_dest) {
+            // Install or refresh cursor agent from bundled resources. Existing installs may
+            // have an older Windows-broken JAR, so do not leave stale copies in place.
+            let mut resource_candidates = vec![
+                self.game_dir.join("dragon-cursor-agent.jar"),
+                std::env::current_exe()
+                    .unwrap_or_default()
+                    .parent()
+                    .unwrap_or(std::path::Path::new("."))
+                    .join("dragon-cursor-agent.jar"),
+                std::env::current_exe()
+                    .unwrap_or_default()
+                    .parent()
+                    .unwrap_or(std::path::Path::new("."))
+                    .join("../Resources/dragon-cursor-agent.jar"),
+            ];
+
+            if let Some(ref path) = options.cursor_agent_jar_path {
+                resource_candidates.insert(0, std::path::PathBuf::from(path));
+            }
+
+            let mut agent_refreshed = false;
+            for candidate in &resource_candidates {
+                if candidate.exists() {
+                    match std::fs::copy(candidate, &cursor_agent_dest) {
+                        Ok(_) => {
+                            agent_refreshed = true;
+                            log_callback(format!("[DragonCursor] Agent refreshed from {:?}", candidate));
+                        }
+                        Err(e) => {
                             log_callback(format!("[DragonCursor] Failed to copy agent: {}", e));
-                        } else {
-                            log_callback(format!("[DragonCursor] Agent installed from {:?}", candidate));
-                            break;
                         }
                     }
+                    break;
                 }
             }
-            
+
+            if !agent_refreshed && !cursor_agent_dest.exists() {
+                log_callback("[DragonCursor] Bundled agent resource not found".to_string());
+            }
+
             if cursor_agent_dest.exists() && cursor_png_path.exists() {
+                if !args.iter().any(|arg| arg == "-Dnet.bytebuddy.experimental=true") {
+                    args.push("-Dnet.bytebuddy.experimental=true".to_string());
+                }
                 args.push(format!("-javaagent:{}", cursor_agent_dest.to_string_lossy()));
                 args.push(format!("-Ddragon.cursor.image={}", cursor_png_path.to_string_lossy()));
+                args.push("-Ddragon.cursor.size=64".to_string());
                 if pointer_png_path.exists() {
                     args.push(format!("-Ddragon.pointer.image={}", pointer_png_path.to_string_lossy()));
                 }

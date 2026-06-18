@@ -14,8 +14,12 @@ public class DragonCursorAgent {
 
     public static volatile long customCursorHandle = 0;
     public static volatile long customPointerHandle = 0;
-    // Use an int flag so we can do atomic-style check: 0=pending, 1=done, 2=failed
+    public static volatile long standardArrowHandle = 0;
+    public static volatile long standardHandHandle = 0;
+    public static volatile long lastWindowHandle = 0;
+    // 0=pending, 1=initializing, 2=done, 3=failed
     public static volatile int cursorState = 0;
+    public static volatile int cursorSize = 64;
 
     public static String cursorImagePath = null;
     public static String pointerImagePath = null;
@@ -23,6 +27,7 @@ public class DragonCursorAgent {
     public static void premain(String agentArgs, Instrumentation inst) {
         cursorImagePath = System.getProperty("dragon.cursor.image");
         pointerImagePath = System.getProperty("dragon.pointer.image");
+        cursorSize = getIntProperty("dragon.cursor.size", 64, 16, 128);
 
         if (cursorImagePath == null || cursorImagePath.isEmpty()) {
             System.out.println("[DragonCursor] No cursor image specified, skipping.");
@@ -30,6 +35,7 @@ public class DragonCursorAgent {
         }
 
         System.out.println("[DragonCursor] Agent loaded. Image: " + cursorImagePath);
+        System.out.println("[DragonCursor] Cursor size: " + cursorSize + "x" + cursorSize);
         if (pointerImagePath != null) {
             System.out.println("[DragonCursor] Pointer Image: " + pointerImagePath);
         }
@@ -41,6 +47,7 @@ public class DragonCursorAgent {
             .transform((builder, typeDescription, classLoader, module, protectionDomain) ->
                 builder
                     .visit(Advice.to(GlfwShowWindowAdvice.class).on(ElementMatchers.named("glfwShowWindow")))
+                    .visit(Advice.to(GlfwSwapBuffersAdvice.class).on(ElementMatchers.named("glfwSwapBuffers")))
                     .visit(Advice.to(GlfwSetCursorAdvice.class).on(ElementMatchers.named("glfwSetCursor")))
                     .visit(Advice.to(GlfwCreateStandardCursorAdvice.class).on(ElementMatchers.named("glfwCreateStandardCursor")))
                     .visit(Advice.to(GlfwDestroyCursorAdvice.class).on(ElementMatchers.named("glfwDestroyCursor")))
@@ -48,6 +55,20 @@ public class DragonCursorAgent {
             .installOn(inst);
 
         System.out.println("[DragonCursor] Hooked LWJGL 3 GLFW!");
+    }
+
+    public static int getIntProperty(String name, int defaultValue, int min, int max) {
+        try {
+            String raw = System.getProperty(name);
+            if (raw == null || raw.trim().isEmpty()) return defaultValue;
+
+            int value = Integer.parseInt(raw.trim());
+            if (value < min) return min;
+            if (value > max) return max;
+            return value;
+        } catch (Throwable ignored) {
+            return defaultValue;
+        }
     }
 
     /**
@@ -125,47 +146,61 @@ public class DragonCursorAgent {
         }
     }
 
-    // Advice: hook glfwShowWindow — fires once during window creation
+    public static void initializeCursor(long windowHandle) {
+        if (windowHandle == 0) return;
+        if (DragonCursorAgent.cursorState != 0) return;
+        DragonCursorAgent.cursorState = 1;
+
+        try {
+            Class<?> glfwClass = Class.forName("org.lwjgl.glfw.GLFW");
+            int size = DragonCursorAgent.cursorSize;
+
+            ByteBuffer[] defBuf = DragonCursorAgent.loadImagePixels(DragonCursorAgent.cursorImagePath, size, size);
+            if (defBuf != null) {
+                long h = DragonCursorAgent.createCursorFromBuffer(glfwClass, defBuf[0], size, size);
+                if (h != 0) {
+                    DragonCursorAgent.customCursorHandle = h;
+                    glfwClass.getMethod("glfwSetCursor", long.class, long.class)
+                             .invoke(null, windowHandle, h);
+                    System.out.println("[DragonCursor] Custom cursor applied (handle=" + h + ", size=" + size + ")");
+                }
+            }
+
+            if (DragonCursorAgent.pointerImagePath != null) {
+                ByteBuffer[] ptrBuf = DragonCursorAgent.loadImagePixels(DragonCursorAgent.pointerImagePath, size, size);
+                if (ptrBuf != null) {
+                    long ph = DragonCursorAgent.createCursorFromBuffer(glfwClass, ptrBuf[0], size, size);
+                    if (ph != 0) {
+                        DragonCursorAgent.customPointerHandle = ph;
+                        System.out.println("[DragonCursor] Custom pointer cursor applied (handle=" + ph + ", size=" + size + ")");
+                    }
+                }
+            }
+
+            DragonCursorAgent.cursorState = 2;
+        } catch (Throwable t) {
+            System.out.println("[DragonCursor] Init error: " + t);
+            DragonCursorAgent.cursorState = 3;
+        }
+    }
+
+    // Advice: remember the window during creation. Cursor creation is deferred
+    // until the first buffer swap so Windows can finish showing the initial frame.
     // ─────────────────────────────────────────────────────────────────────────
     public static class GlfwShowWindowAdvice {
         @Advice.OnMethodEnter
         public static void onShowWindow(@Advice.Argument(0) long windowHandle) {
-            // Only run once; use compare-and-set pattern via volatile int
-            if (DragonCursorAgent.cursorState != 0) return;
-            DragonCursorAgent.cursorState = 1; // Mark as initialising immediately to prevent re-entry
+            DragonCursorAgent.lastWindowHandle = windowHandle;
+        }
+    }
 
-            try {
-                Class<?> glfwClass = Class.forName("org.lwjgl.glfw.GLFW");
-
-                // Load default cursor (32x32)
-                ByteBuffer[] defBuf = DragonCursorAgent.loadImagePixels(DragonCursorAgent.cursorImagePath, 32, 32);
-                if (defBuf != null) {
-                    long h = DragonCursorAgent.createCursorFromBuffer(glfwClass, defBuf[0], 32, 32);
-                    if (h != 0) {
-                        DragonCursorAgent.customCursorHandle = h;
-                        // Apply cursor to window immediately — we are on the correct thread here
-                        glfwClass.getMethod("glfwSetCursor", long.class, long.class)
-                                 .invoke(null, windowHandle, h);
-                        System.out.println("[DragonCursor] Custom cursor applied (handle=" + h + ")");
-                    }
-                }
-
-                // Load pointer cursor (32x32)
-                if (DragonCursorAgent.pointerImagePath != null) {
-                    ByteBuffer[] ptrBuf = DragonCursorAgent.loadImagePixels(DragonCursorAgent.pointerImagePath, 32, 32);
-                    if (ptrBuf != null) {
-                        long ph = DragonCursorAgent.createCursorFromBuffer(glfwClass, ptrBuf[0], 32, 32);
-                        if (ph != 0) {
-                            DragonCursorAgent.customPointerHandle = ph;
-                            System.out.println("[DragonCursor] Custom pointer cursor applied (handle=" + ph + ")");
-                        }
-                    }
-                }
-
-                DragonCursorAgent.cursorState = 2; // Done
-            } catch (Throwable t) {
-                System.out.println("[DragonCursor] Init error: " + t);
-                DragonCursorAgent.cursorState = 2; // Mark done even on error so we don't retry every frame
+    // Advice: initialize after Minecraft has started presenting frames.
+    // ─────────────────────────────────────────────────────────────────────────
+    public static class GlfwSwapBuffersAdvice {
+        @Advice.OnMethodExit
+        public static void onSwapBuffers(@Advice.Argument(0) long windowHandle) {
+            if (DragonCursorAgent.cursorState == 0) {
+                DragonCursorAgent.initializeCursor(windowHandle);
             }
         }
     }
@@ -178,6 +213,10 @@ public class DragonCursorAgent {
         public static void onSetCursor(@Advice.Argument(value = 1, readOnly = false) long cursor) {
             if (cursor == 0 && DragonCursorAgent.customCursorHandle != 0) {
                 cursor = DragonCursorAgent.customCursorHandle;
+            } else if (cursor == DragonCursorAgent.standardArrowHandle && DragonCursorAgent.customCursorHandle != 0) {
+                cursor = DragonCursorAgent.customCursorHandle;
+            } else if (cursor == DragonCursorAgent.standardHandHandle && DragonCursorAgent.customPointerHandle != 0) {
+                cursor = DragonCursorAgent.customPointerHandle;
             }
         }
     }
@@ -190,12 +229,18 @@ public class DragonCursorAgent {
         @Advice.OnMethodExit
         public static void onCreateStandardCursor(@Advice.Argument(0) int shape, @Advice.Return(readOnly = false) long result) {
             // GLFW_HAND_CURSOR = 0x00036004
-            if (shape == 0x00036004 && DragonCursorAgent.customPointerHandle != 0) {
-                result = DragonCursorAgent.customPointerHandle;
+            if (shape == 0x00036004) {
+                if (result != 0) DragonCursorAgent.standardHandHandle = result;
+                if (DragonCursorAgent.customPointerHandle != 0) {
+                    result = DragonCursorAgent.customPointerHandle;
+                }
             }
             // GLFW_ARROW_CURSOR = 0x00036001
-            else if (shape == 0x00036001 && DragonCursorAgent.customCursorHandle != 0) {
-                result = DragonCursorAgent.customCursorHandle;
+            else if (shape == 0x00036001) {
+                if (result != 0) DragonCursorAgent.standardArrowHandle = result;
+                if (DragonCursorAgent.customCursorHandle != 0) {
+                    result = DragonCursorAgent.customCursorHandle;
+                }
             }
         }
     }

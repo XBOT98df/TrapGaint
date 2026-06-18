@@ -1136,35 +1136,20 @@ export default function Launcher() {
 
   // Apply equipped cursor globally
   useEffect(() => {
-    const cursorMap: Record<number, {default: string, pointer: string}> = {
-      1: { default: '/netherite-frame-0-small.png', pointer: '/netherite-frame-1-small.png' },
-      2: { default: '/jujutsu-cursor-small.png', pointer: '/jujutsu-pointer-small.png' },
-      3: { default: '/demon-slayer-cursor-small.png', pointer: '/demon-slayer-pointer-small.png' },
-      4: { default: '/fifa-cursor-small.png', pointer: '/fifa-pointer-small.png' },
-      5: { default: '/hollow-knight-cursor-small.png', pointer: '/hollow-knight-pointer-small.png' },
-      6: { default: '/preppy-pink-cursor-small.png', pointer: '/preppy-pink-pointer-small.png' }
-    };
-    if (equippedCursor !== null && cursorMap[equippedCursor]) {
-      const { default: cursorUrl, pointer: pointerUrl } = cursorMap[equippedCursor];
-      document.body.style.cursor = `url('${cursorUrl}'), auto`;
-      // Also override all elements
-      const style = document.createElement('style');
-      style.id = 'custom-cursor-style';
-      style.textContent = `
-        * { cursor: url('${cursorUrl}'), auto !important; }
-        a, button, [role="button"], input[type="submit"], input[type="button"], input[type="reset"], select, .cursor-pointer { cursor: url('${pointerUrl}'), pointer !important; }
-        a *, button *, [role="button"] *, .cursor-pointer * { cursor: url('${pointerUrl}'), pointer !important; }
-      `;
-      // Remove old style if exists
-      document.getElementById('custom-cursor-style')?.remove();
-      document.head.appendChild(style);
+    const root = document.documentElement;
+    const cursorImages = equippedCursor !== null ? cursorsBase64[equippedCursor] : undefined;
+
+    if (cursorImages) {
+      root.style.setProperty('--app-cursor-default', `url("${cursorImages.default}") 0 0`);
+      root.style.setProperty('--app-cursor-pointer', `url("${cursorImages.pointer}") 0 0`);
     } else {
-      document.body.style.cursor = '';
-      document.getElementById('custom-cursor-style')?.remove();
+      root.style.removeProperty('--app-cursor-default');
+      root.style.removeProperty('--app-cursor-pointer');
     }
+
     return () => {
-      document.body.style.cursor = '';
-      document.getElementById('custom-cursor-style')?.remove();
+      root.style.removeProperty('--app-cursor-default');
+      root.style.removeProperty('--app-cursor-pointer');
     };
   }, [equippedCursor]);
 

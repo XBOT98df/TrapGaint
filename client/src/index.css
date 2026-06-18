@@ -122,6 +122,8 @@
 
 :root {
   /* Dark Theme by default to match the request */
+  --app-cursor-default: url('/cursor-gradient.svg') 0 0;
+  --app-cursor-pointer: url('/cursor-gradient.svg') 0 0;
   --background: 0 0% 0%; /* Pure black background */
   --foreground: 0 0% 98%;
 
@@ -177,14 +179,14 @@ html, body {
   -moz-user-select: none !important;
   -ms-user-select: none !important;
   /* Custom cursor */
-  cursor: url('/cursor-gradient.svg') 0 0, auto !important;
+  cursor: var(--app-cursor-default), auto !important;
 }
 
 /* Apply cursor to all elements to prevent corner reversion */
 *,
 *::before,
 *::after {
-  cursor: url('/cursor-gradient.svg') 0 0, auto !important;
+  cursor: var(--app-cursor-default), auto !important;
 }
 
 /* Override specific cursor types */
@@ -195,7 +197,7 @@ textarea,
 select,
 [role="button"],
 [tabindex] {
-  cursor: url('/cursor-gradient.svg') 0 0, pointer !important;
+  cursor: var(--app-cursor-pointer), pointer !important;
 }
 
 /* Resize cursors for corners and edges */
@@ -207,7 +209,7 @@ select,
 [style*="cursor: s-resize"],
 [style*="cursor: e-resize"],
 [style*="cursor: w-resize"] {
-  cursor: url('/cursor-gradient.svg') 0 0, auto !important;
+  cursor: var(--app-cursor-default), auto !important;
 }
 
 /* Enchantment glow effect for cursor (simulated with filter) */
