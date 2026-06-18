@@ -214,9 +214,9 @@
         const pointerUrl = resolveAppAsset(cursorDef.pointer);
         const style = document.createElement('style');
         style.textContent = `
-          * { cursor: url('${cursorUrl}'), auto !important; }
-          a, button, .cursor-pointer { cursor: url('${pointerUrl}'), pointer !important; }
-          a *, button *, .cursor-pointer * { cursor: url('${pointerUrl}'), pointer !important; }
+          * { cursor: url('${cursorUrl}') 0 0, auto !important; }
+          a, button, .cursor-pointer { cursor: url('${pointerUrl}') 0 0, pointer !important; }
+          a *, button *, .cursor-pointer * { cursor: url('${pointerUrl}') 0 0, pointer !important; }
         `;
         document.head.appendChild(style);
       }

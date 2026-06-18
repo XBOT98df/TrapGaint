@@ -87,23 +87,30 @@ public class DragonCursorAgent {
         }
         
         public static long createCursor(Class<?> glfwClass, BufferedImage image) throws Exception {
-            java.awt.Image scaled = image.getScaledInstance(32, 32, java.awt.Image.SCALE_SMOOTH);
-            BufferedImage resized = new BufferedImage(32, 32, BufferedImage.TYPE_INT_ARGB);
-            java.awt.Graphics2D g2d = resized.createGraphics();
-            g2d.drawImage(scaled, 0, 0, null);
-            g2d.dispose();
-
-            int width = resized.getWidth();
-            int height = resized.getHeight();
-
-            ByteBuffer pixels = ByteBuffer.allocateDirect(width * height * 4);
-            for (int y = 0; y < height; y++) {
-                for (int x = 0; x < width; x++) {
-                    int argb = resized.getRGB(x, y);
-                    pixels.put((byte) ((argb >> 16) & 0xFF));
-                    pixels.put((byte) ((argb >> 8) & 0xFF));
-                    pixels.put((byte) (argb & 0xFF));
-                    pixels.put((byte) ((argb >> 24) & 0xFF));
+            int originalWidth = image.getWidth();
+            int originalHeight = image.getHeight();
+            
+            int targetWidth = 32;
+            int targetHeight = 32;
+            
+            ByteBuffer pixels = ByteBuffer.allocateDirect(targetWidth * targetHeight * 4);
+            
+            // Manual nearest-neighbor scaling to completely avoid AWT Graphics2D pipeline
+            for (int y = 0; y < targetHeight; y++) {
+                for (int x = 0; x < targetWidth; x++) {
+                    int srcX = (int)((x / (float)targetWidth) * originalWidth);
+                    int srcY = (int)((y / (float)targetHeight) * originalHeight);
+                    
+                    // Clamp to prevent out of bounds
+                    srcX = Math.min(srcX, originalWidth - 1);
+                    srcY = Math.min(srcY, originalHeight - 1);
+                    
+                    int argb = image.getRGB(srcX, srcY);
+                    
+                    pixels.put((byte) ((argb >> 16) & 0xFF)); // R
+                    pixels.put((byte) ((argb >> 8) & 0xFF));  // G
+                    pixels.put((byte) (argb & 0xFF));         // B
+                    pixels.put((byte) ((argb >> 24) & 0xFF)); // A
                 }
             }
             pixels.flip();
