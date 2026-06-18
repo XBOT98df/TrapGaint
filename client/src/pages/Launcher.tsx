@@ -1146,14 +1146,14 @@ export default function Launcher() {
     };
     if (equippedCursor !== null && cursorMap[equippedCursor]) {
       const { default: cursorUrl, pointer: pointerUrl } = cursorMap[equippedCursor];
-      document.body.style.cursor = `url('${cursorUrl}') 0 0, auto`;
+      document.body.style.cursor = `url('${cursorUrl}'), auto`;
       // Also override all elements
       const style = document.createElement('style');
       style.id = 'custom-cursor-style';
       style.textContent = `
-        * { cursor: url('${cursorUrl}') 0 0, auto !important; }
-        a, button, [role="button"], input[type="submit"], input[type="button"], input[type="reset"], select, .cursor-pointer { cursor: url('${pointerUrl}') 0 0, pointer !important; }
-        a *, button *, [role="button"] *, .cursor-pointer * { cursor: url('${pointerUrl}') 0 0, pointer !important; }
+        * { cursor: url('${cursorUrl}'), auto !important; }
+        a, button, [role="button"], input[type="submit"], input[type="button"], input[type="reset"], select, .cursor-pointer { cursor: url('${pointerUrl}'), pointer !important; }
+        a *, button *, [role="button"] *, .cursor-pointer * { cursor: url('${pointerUrl}'), pointer !important; }
       `;
       // Remove old style if exists
       document.getElementById('custom-cursor-style')?.remove();

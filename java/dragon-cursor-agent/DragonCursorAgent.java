@@ -40,7 +40,7 @@ public class DragonCursorAgent {
             .type(ElementMatchers.named("org.lwjgl.glfw.GLFW"))
             .transform((builder, typeDescription, classLoader, module, protectionDomain) ->
                 builder
-                    .visit(Advice.to(GlfwSwapBuffersAdvice.class).on(ElementMatchers.named("glfwSwapBuffers")))
+                    .visit(Advice.to(GlfwShowWindowAdvice.class).on(ElementMatchers.named("glfwShowWindow")))
                     .visit(Advice.to(GlfwSetCursorAdvice.class).on(ElementMatchers.named("glfwSetCursor")))
                     .visit(Advice.to(GlfwCreateStandardCursorAdvice.class).on(ElementMatchers.named("glfwCreateStandardCursor")))
                     .visit(Advice.to(GlfwDestroyCursorAdvice.class).on(ElementMatchers.named("glfwDestroyCursor")))
@@ -125,13 +125,11 @@ public class DragonCursorAgent {
         }
     }
 
+    // Advice: hook glfwShowWindow — fires once during window creation
     // ─────────────────────────────────────────────────────────────────────────
-    // Advice: hook glfwSwapBuffers — fires on the RENDER/MAIN thread in LWJGL,
-    // which is the correct thread for GLFW calls on Windows.
-    // ─────────────────────────────────────────────────────────────────────────
-    public static class GlfwSwapBuffersAdvice {
+    public static class GlfwShowWindowAdvice {
         @Advice.OnMethodEnter
-        public static void onSwapBuffers(@Advice.Argument(0) long windowHandle) {
+        public static void onShowWindow(@Advice.Argument(0) long windowHandle) {
             // Only run once; use compare-and-set pattern via volatile int
             if (DragonCursorAgent.cursorState != 0) return;
             DragonCursorAgent.cursorState = 1; // Mark as initialising immediately to prevent re-entry

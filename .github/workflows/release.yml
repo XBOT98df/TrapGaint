@@ -136,6 +136,18 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm install
 
+      - name: Compile Dragon Cursor Agent
+        shell: bash
+        run: |
+          cd java/dragon-cursor-agent
+          javac -source 8 -target 8 -cp "lib/*" DragonCursorAgent.java -d .
+          mkdir -p tmp_extract
+          cd tmp_extract
+          for f in ../lib/*.jar; do jar xf "$f"; done
+          cd ..
+          jar cmvf MANIFEST.MF dragon-cursor-agent.jar dragon/ -C tmp_extract .
+          cp dragon-cursor-agent.jar ../../src-tauri/resources/
+
       - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0
         env:
