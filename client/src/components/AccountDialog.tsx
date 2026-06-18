@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { LogOut, FolderOpen } from "lucide-react";
 import { launcher, type AuthAccount } from "@/lib/launcher";
 import { formatPlaytimeTotal, getWeeklyPlaytimeStats } from "@/lib/playtimeTracker";
-import dragonLogo from "@assets/CS_Star_8.svg";
+import dragonLogo from "@assets/NewIcons.svg";
 
 interface AccountDialogProps {
   open: boolean;
@@ -116,22 +116,14 @@ export function AccountDialog({ open, onOpenChange, account }: AccountDialogProp
                 </label>
                 
                 <div className="flex items-center gap-4 p-3 bg-black rounded-lg">
-                  {account.is_offline ? (
-                    <img 
-                      src={dragonLogo} 
-                      alt="Dragon Logo" 
-                      className="w-12 h-12 rounded-lg object-cover"
-                    />
-                  ) : (
-                    <img 
-                      src={`https://mc-heads.net/avatar/${account.uuid}/48`}
-                      alt={account.username}
-                      className="w-12 h-12 rounded-lg"
-                      onError={(e) => {
-                        e.currentTarget.src = dragonLogo;
-                      }}
-                    />
-                  )}
+                  <img 
+                    src={`https://mc-heads.net/avatar/${account.is_offline ? account.username : account.uuid}/48?t=${Date.now()}`}
+                    alt={account.username}
+                    className="w-12 h-12 rounded-lg object-cover"
+                    onError={(e) => {
+                      e.currentTarget.src = 'https://mc-heads.net/avatar/MHF_Steve/48';
+                    }}
+                  />
                   <div className="flex-1">
                     <h3 className="text-base font-semibold text-white" style={{ fontFamily: "'Outfit', sans-serif" }}>
                       {account.username}

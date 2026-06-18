@@ -1,0 +1,11 @@
+{
+  "version": "1.0.2",
+  "notes": "TrapGaint v1.0.2",
+  "pub_date": "2026-06-18T04:30:06Z",
+  "platforms": {
+    "darwin-x86_64": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTSndCazFwa3VUdTJBRU16ZzhJTmVubXB0a3I1RDY1azJ2a3VLdGU3RXQra0VUTUh1YVJ1YmxQek9razltM3M3Q01XMlJUNWgrNUxoQUZLNHJBWFJPdHg4THpPNzlsaWdJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgxNzU2NDQ4CWZpbGU6VHJhcEdhaW50LmFwcC50YXIuZ3oKYVNZK1VMeEFZd09mYVNIakVkM2NaMkFYd2NWc3BsM2xWcjZML1NOdkZ3a3Vsa0lJd3lKQ3RQb3AwTVo5alVrR3ZNZS9OWDlHWGNteXR5bEdFQ0ljQ1E9PQo=",
+      "url": "https://github.com/XBOT98df/TrapGaint/releases/download/v1.0.2/TrapGaint_x64.app.tar.gz"
+    }
+  }
+}

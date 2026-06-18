@@ -101,7 +101,7 @@ impl DiscordRPC {
                 .details("TrapGaint")
                 .assets(
                     activity::Assets::new()
-                        .large_image("dragon_logo")
+                        .large_image("trapgaint")
                         .large_text("TrapGaint"),
                 )
                 .timestamps(activity::Timestamps::new().start(start_time))
@@ -172,7 +172,7 @@ impl DiscordRPC {
                 .details(&details)
                 .assets(
                     activity::Assets::new()
-                        .large_image("dragon_logo")
+                        .large_image("trapgaint")
                         .large_text("TrapGaint"),
                 )
                 .timestamps(activity::Timestamps::new().start(start_time))

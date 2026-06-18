@@ -164,7 +164,7 @@
       forge: 'generated_images/forge.png',
       fabric: 'generated_images/fabric.png',
       quilt: 'generated_images/quilt.png',
-      dragon: 'CS_Star_8.svg',
+      dragon: 'NewIcons.svg',
       misc: 'misc.png',
     };
 
@@ -196,6 +196,30 @@
 
     if (!gameVersion) {
       loaderVersionEl.style.display = 'none';
+    }
+
+    const savedCursor = localStorage.getItem('dragon_equipped_cursor');
+    if (savedCursor) {
+      const cursorMap = {
+        1: { default: 'netherite-frame-0-small.png', pointer: 'netherite-frame-1-small.png' },
+        2: { default: 'jujutsu-cursor-small.png', pointer: 'jujutsu-pointer-small.png' },
+        3: { default: 'demon-slayer-cursor-small.png', pointer: 'demon-slayer-pointer-small.png' },
+        4: { default: 'fifa-cursor-small.png', pointer: 'fifa-pointer-small.png' },
+        5: { default: 'hollow-knight-cursor-small.png', pointer: 'hollow-knight-pointer-small.png' },
+        6: { default: 'preppy-pink-cursor-small.png', pointer: 'preppy-pink-pointer-small.png' }
+      };
+      const cursorDef = cursorMap[parseInt(savedCursor, 10)];
+      if (cursorDef) {
+        const cursorUrl = resolveAppAsset(cursorDef.default);
+        const pointerUrl = resolveAppAsset(cursorDef.pointer);
+        const style = document.createElement('style');
+        style.textContent = `
+          * { cursor: url('${cursorUrl}'), auto !important; }
+          a, button, .cursor-pointer { cursor: url('${pointerUrl}'), pointer !important; }
+          a *, button *, .cursor-pointer * { cursor: url('${pointerUrl}'), pointer !important; }
+        `;
+        document.head.appendChild(style);
+      }
     }
   </script>
 </body>

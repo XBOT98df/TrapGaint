@@ -104,7 +104,7 @@ import wallFall from "@assets/generated_images/Minecraft_Fall_Drop_Campaign_Key_
 import wallSpring from "@assets/generated_images/MCV_SpringDrop_DotNet_Downloadable_Wallpaper_2560x1440.png";
 import vanillaLogo from "@assets/generated_images/vanilla.png";
 import microsoftLogo from "@assets/generated_images/microsoft.jpg";
-import highEndImg from "@assets/CS_Star_8.svg";
+import highEndImg from "@assets/NewIcons.svg";
 import lowEndImg from "@assets/generated_images/22.png";
 import starImg from "@assets/generated_images/star1\`1.png";
 

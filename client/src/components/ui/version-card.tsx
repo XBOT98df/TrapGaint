@@ -12,6 +12,7 @@ interface VersionCardProps {
   contentAlignment?: "center" | "upper";
   subtitlePlacement?: "inline" | "border-float";
   loaderLabelPlacement?: "none" | "border-float-top";
+  isMiscLoader?: boolean;
   onClick: () => void;
 }
 
@@ -26,6 +27,7 @@ export function VersionCard({
   contentAlignment = "center",
   subtitlePlacement = "inline",
   loaderLabelPlacement = "none",
+  isMiscLoader = false,
   onClick,
 }: VersionCardProps) {
   // Extract the Minecraft version number (e.g., "1.21.11" from "1.21.11-forge-53.0.3")
@@ -34,6 +36,9 @@ export function VersionCard({
   const isUpperAligned = contentAlignment === "upper";
   const isFloatingSubtitle = subtitlePlacement === "border-float";
   const isFloatingLoaderLabel = loaderLabelPlacement === "border-float-top" && Boolean(loaderLabel);
+  
+  // Use Panchang font for misc loader, Bebas Neue for others
+  const fontFamily = isMiscLoader ? "'Panchang', sans-serif" : "'Bebas Neue', sans-serif";
 
   return (
     <button
@@ -67,21 +72,21 @@ export function VersionCard({
                 delay={2}
                 yoyo={false}
                 className="font-bold block text-3xl"
-                style={{ fontFamily: "'Bebas Neue', sans-serif" }}
+                style={{ fontFamily }}
                 color="#ffffff"
                 shineColor="#10b981"
                 spread={120}
                 direction="left"
               />
               {!hideVersionLabel && (
-                <div className="text-xs text-white/50 mt-1 font-mono break-words" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>
+                <div className="text-xs text-white/50 mt-1 font-mono break-words" style={{ fontFamily }}>
                   {fullVersionName}
                 </div>
               )}
               {subtitle && !isFloatingSubtitle && (
                 <div
                   className="mt-2 text-sm text-white/78 break-words leading-tight"
-                  style={{ fontFamily: "'Bebas Neue', sans-serif", letterSpacing: "0.04em" }}
+                  style={{ fontFamily, letterSpacing: "0.04em" }}
                 >
                   {subtitle}
                 </div>
@@ -89,18 +94,18 @@ export function VersionCard({
             </>
           ) : (
             <>
-              <span className="font-bold text-white/30 block text-3xl" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>
+              <span className="font-bold text-white/30 block text-3xl" style={{ fontFamily }}>
                 {mcVersion}
               </span>
               {!hideVersionLabel && (
-                <div className="text-xs text-white/20 mt-1 font-mono break-words" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>
+                <div className="text-xs text-white/20 mt-1 font-mono break-words" style={{ fontFamily }}>
                   {fullVersionName}
                 </div>
               )}
               {subtitle && !isFloatingSubtitle && (
                 <div
                   className="mt-2 text-sm text-white/40 break-words leading-tight"
-                  style={{ fontFamily: "'Bebas Neue', sans-serif", letterSpacing: "0.04em" }}
+                  style={{ fontFamily, letterSpacing: "0.04em" }}
                 >
                   {subtitle}
                 </div>
@@ -112,7 +117,7 @@ export function VersionCard({
       {loaderLabel && isFloatingLoaderLabel && (
         <div
           className="pointer-events-none absolute left-1/2 top-0 z-20 -translate-x-1/2 -translate-y-1/2 bg-black px-4 py-1 text-[13px] uppercase tracking-[0.18em] text-white/50 max-w-[80%] truncate"
-          style={{ fontFamily: "'Bebas Neue', sans-serif" }}
+          style={{ fontFamily }}
         >
           {loaderLabel}
         </div>
@@ -120,7 +125,7 @@ export function VersionCard({
       {subtitle && isFloatingSubtitle && (
         <div
           className="pointer-events-none absolute left-1/2 bottom-0 z-20 -translate-x-1/2 translate-y-1/2 bg-black px-4 py-1 text-sm text-white/88 max-w-[85%] truncate"
-          style={{ fontFamily: "'Bebas Neue', sans-serif", letterSpacing: "0.04em" }}
+          style={{ fontFamily, letterSpacing: "0.04em" }}
         >
           {subtitle}
         </div>

@@ -255,6 +255,8 @@ async fn launch_game(
     oder_id: Option<String>,
     tier: Option<String>,
     dragon_mod_source: Option<String>,
+    cursor_image_base64: Option<String>,
+    pointer_image_base64: Option<String>,
     app: tauri::AppHandle,
     state: State<'_, AppState>,
 ) -> Result<(), String> {
@@ -525,6 +527,11 @@ async fn launch_game(
             emit_log(&app_clone, "[Dragon] ✓ All mods ready for launch");
         }
         
+        let cursor_agent_jar_path = match app.path().resource_dir() {
+            Ok(dir) => Some(dir.join("resources").join("dragon-cursor-agent.jar").to_string_lossy().to_string()),
+            Err(_) => None,
+        };
+
         let options = LaunchOptions {
             version_id,
             username,
@@ -538,6 +545,9 @@ async fn launch_game(
             prefer_local_dragon_mod: dragon_mod_source.eq_ignore_ascii_case("local"),
             is_offline: launch_is_offline,
             skin_username: launch_skin_username,
+            cursor_image_base64,
+            pointer_image_base64,
+            cursor_agent_jar_path,
         };
         
         // Verify DragonSkins mod for Dragon Loader versions only

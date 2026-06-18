@@ -3,7 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import { ShiningText } from "@/components/ui/shining-text";
 import { initializeCredits, getCredits, hasEnoughCreditsForTokens, fetchCreditsFromSupabase, deductCreditsFromTokens, calculateCreditsFromTokens } from "@/lib/chatCredits";
 import { invoke, convertFileSrc } from "@tauri-apps/api/core";
-import { Play, Download, Settings, Globe, Users, Newspaper, ShoppingBag, Gamepad2, Crown, Star, ArrowLeft, ArrowRight, ChevronDown, Loader2, Terminal, Home, Layers, Server, UserCircle2, Rss, Store, Cog, FolderOpen, Trash2, Plus, X, Package, Map as MapIcon, Earth, Search, ExternalLink, Flame, TrendingUp, Sparkles, Command, Zap, Compass, Cpu, Wand2, LogOut, Wifi, WifiOff, Shield, Palette, UserPlus, Check, XCircle, Edit2, Clock, Phone, PhoneOff, PhoneCall, Mic, MicOff, Calendar, Mouse } from "lucide-react";
+import { Play, Download, Settings, Globe, Users, Newspaper, ShoppingBag, Gamepad2, Crown, Star, ArrowLeft, ArrowRight, ChevronDown, Loader2, Terminal, Home, Layers, Server, UserCircle2, Rss, Store, Cog, FolderOpen, Trash2, Plus, X, Package, Map as MapIcon, Earth, Search, ExternalLink, Flame, TrendingUp, Sparkles, Command, Zap, Compass, Cpu, Wand2, LogOut, Wifi, WifiOff, Shield, Palette, UserPlus, Check, XCircle, Edit2, Clock, Phone, PhoneOff, PhoneCall, Mic, MicOff, Calendar, Mouse, RefreshCw, Upload, Cat } from "lucide-react";
 import { PiHouseFill, PiGameControllerFill, PiGlobeFill, PiUsersFill, PiNewspaperFill, PiStorefrontFill, PiGearFill, PiPlayFill, PiSwordFill, PiShieldFill, PiCubeFill, PiHeartFill, PiLightningFill, PiRocketLaunchFill, PiCompassFill, PiCpuFill, PiMagicWandFill, PiFlaskFill, PiDownloadSimpleBold } from "react-icons/pi";
 import { GiWoodAxe, GiBroadsword, GiChestArmor, GiCrossedSwords, GiDynamite, GiMagicSwirl, GiCog, GiCompass, GiRocket } from "react-icons/gi";
 import { motion, AnimatePresence } from "framer-motion";
@@ -71,6 +71,7 @@ import { CrashReportDialog } from "@/components/CrashReportDialog";
 import { RepairDialog } from "@/components/RepairDialog";
 import { FriendSearchSpotlight } from "@/components/ui/friend-search-spotlight";
 import { BorderTrail } from "@/components/ui/border-trail";
+import { cursorsBase64 } from "@/lib/cursorsBase64";
 import AnimatedCardStack from "@/components/ui/animate-card-animation";
 import { VersionCard } from "@/components/ui/version-card";
 import { NoModsFound } from "@/components/ui/retro-tv-error";
@@ -99,8 +100,8 @@ import vanillaLogo from "@assets/generated_images/vanilla.png";
 import forgeLogo from "@assets/generated_images/forge.png";
 import fabricLogo from "@assets/generated_images/fabric.png";
 import quiltLogo from "@assets/generated_images/quilt.png";
-import dragonLogo from "@assets/CS_Star_8.svg";
-import dragonTitle from "@assets/CS_Star_8.svg";
+import dragonLogo from "@assets/NewIcons.svg";
+import dragonTitle from "@assets/NewIcons.svg";
 import clientsideImg from "@assets/generated_images/clientside.jpg";
 import img121 from "@assets/generated_images/1.21.png";
 import img261Snapshot from "@assets/generated_images/26.1.jpg";
@@ -110,7 +111,7 @@ import img118 from "@assets/generated_images/1.18.jpg";
 import img117 from "@assets/generated_images/1.17.jpg";
 
 // Import SVG icons
-import playNewIcon from "@assets/star2.svg";
+import playNewIcon from "@assets/NewIcons.svg";
 import playIcon from "@assets/play.svg";
 import nametagIcon from "@assets/icons/icons12.svg";
 import versionIcon from "@assets/globe.svg";
@@ -118,7 +119,7 @@ import serverHostingIcon from "@assets/prism.svg";
 import newsIcon from "@assets/icons/cube.svg";
 import friendsIcon from "@assets/icons/c7.svg";
 import settingsIcon from "@assets/roll.svg";
-import starIcon from "@assets/CS_Star_8.svg";
+import starIcon from "@assets/NewIcons.svg";
 import img116 from "@assets/generated_images/1.16.jpg";
 import img115 from "@assets/generated_images/1.15.jpeg";
 import img114 from "@assets/generated_images/1.14.jpg";
@@ -1126,6 +1127,46 @@ export default function Launcher() {
   const [selectedVersion, setSelectedVersion] = useState<string>("");
   const [selectedCategory, setSelectedCategory] = useState<VersionCategory | null>(null);
   const [activeAccount, setActiveAccount] = useState<AuthAccount | null>(null);
+  const [miscStoreCategory, setMiscStoreCategory] = useState<'pets' | 'cursors'>('pets');
+  const [equippedCursor, setEquippedCursor] = useState<number | null>(() => {
+    const saved = localStorage.getItem('dragon_equipped_cursor');
+    return saved ? parseInt(saved, 10) : null;
+  });
+  const [cursorPage, setCursorPage] = useState(0);
+
+  // Apply equipped cursor globally
+  useEffect(() => {
+    const cursorMap: Record<number, {default: string, pointer: string}> = {
+      1: { default: '/netherite-frame-0-small.png', pointer: '/netherite-frame-1-small.png' },
+      2: { default: '/jujutsu-cursor-small.png', pointer: '/jujutsu-pointer-small.png' },
+      3: { default: '/demon-slayer-cursor-small.png', pointer: '/demon-slayer-pointer-small.png' },
+      4: { default: '/fifa-cursor-small.png', pointer: '/fifa-pointer-small.png' },
+      5: { default: '/hollow-knight-cursor-small.png', pointer: '/hollow-knight-pointer-small.png' },
+      6: { default: '/preppy-pink-cursor-small.png', pointer: '/preppy-pink-pointer-small.png' }
+    };
+    if (equippedCursor !== null && cursorMap[equippedCursor]) {
+      const { default: cursorUrl, pointer: pointerUrl } = cursorMap[equippedCursor];
+      document.body.style.cursor = `url('${cursorUrl}'), auto`;
+      // Also override all elements
+      const style = document.createElement('style');
+      style.id = 'custom-cursor-style';
+      style.textContent = `
+        * { cursor: url('${cursorUrl}'), auto !important; }
+        a, button, [role="button"], input[type="submit"], input[type="button"], input[type="reset"], select, .cursor-pointer { cursor: url('${pointerUrl}'), pointer !important; }
+        a *, button *, [role="button"] *, .cursor-pointer * { cursor: url('${pointerUrl}'), pointer !important; }
+      `;
+      // Remove old style if exists
+      document.getElementById('custom-cursor-style')?.remove();
+      document.head.appendChild(style);
+    } else {
+      document.body.style.cursor = '';
+      document.getElementById('custom-cursor-style')?.remove();
+    }
+    return () => {
+      document.body.style.cursor = '';
+      document.getElementById('custom-cursor-style')?.remove();
+    };
+  }, [equippedCursor]);
 
   // Wrapper to handle account changes (NO registration here - done in startup/onboarding)
   const handleAccountChange = async (account: AuthAccount | null) => {
@@ -1373,6 +1414,28 @@ export default function Launcher() {
 
   // Supabase heartbeat for online status (Railway API removed)
   // const { onlineCount } = useOnlineCount();
+
+  // Cursors state
+  const [activeCursor, setActiveCursor] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('dragon_app_cursor') || 'default';
+    }
+    return 'default';
+  });
+
+  const handleCursorSelect = (cursorCss: string) => {
+    setActiveCursor(cursorCss);
+    localStorage.setItem('dragon_app_cursor', cursorCss);
+  };
+
+  const appCursors = [
+    { id: 'default', name: 'Default', css: 'default', description: 'The standard system cursor.' },
+    { id: 'crosshair', name: 'Crosshair', css: 'crosshair', description: 'A precise crosshair, great for gaming vibes.' },
+    { id: 'pointer', name: 'Pointer', css: 'pointer', description: 'The classic hand pointer.' },
+    { id: 'cell', name: 'Cell', css: 'cell', description: 'A precise plus sign cursor.' },
+    { id: 'help', name: 'Help', css: 'help', description: 'Cursor with a question mark.' },
+    { id: 'text', name: 'Text', css: 'text', description: 'The text selection I-beam.' }
+  ];
 
   // Achievements data with color combinations (white + color)
   const [achievements, setAchievements] = useState<Achievement[]>(() => {
@@ -1671,6 +1734,8 @@ export default function Launcher() {
   const miscModpackPrefetchingRef = useRef<Set<string>>(new Set());
   const miscModpackScrollDeltaRef = useRef(0);
   const miscModpackScrollLockRef = useRef(0);
+  const cursorScrollDeltaRef = useRef(0);
+  const cursorScrollLockRef = useRef(0);
 
   // Mod browser pagination state
   const [modBrowserPage, setModBrowserPage] = useState(1);
@@ -3252,7 +3317,7 @@ export default function Launcher() {
                   if (Notification.permission === 'granted') {
                     new Notification(notif.title || "Hey what's up! 👋", {
                       body: notif.message || `${notif.sender_username} is calling you to play in Resonance!`,
-                      icon: '/CS_Star_8.svg'
+                      icon: '/NewIcons.svg'
                     });
                   } else if (Notification.permission !== 'denied') {
                     Notification.requestPermission();
@@ -4730,12 +4795,18 @@ export default function Launcher() {
         setGameLogs(prev => [...prev, `${getTimestamp()} Bedrock Edition launched!`]);
         return;
       }
+      let cursorImageBase64: string | undefined = undefined;
+      let pointerImageBase64: string | undefined = undefined;
+      if (equippedCursor !== null && cursorsBase64[equippedCursor]) {
+        cursorImageBase64 = cursorsBase64[equippedCursor].default;
+        pointerImageBase64 = cursorsBase64[equippedCursor].pointer;
+      }
 
       const unlisten = await launcher.launchGame(versionToLaunch, username, uuid, accessToken, (line) => {
         if (filterLog(line) && line.trim()) {
           setGameLogs(prev => [...prev.slice(-200), formatLog(line)]);
         }
-      }, effectiveDragonModSource);
+      }, effectiveDragonModSource, cursorImageBase64, pointerImageBase64);
 
       // Clear progress interval when launch completes
       clearInterval(progressInterval);
@@ -6422,6 +6493,17 @@ export default function Launcher() {
     );
   }, [handlePagedScrollNavigation, miscModpackPage, miscModpackPageCount, navigateMiscModpackPage, openMiscVersionMenuKey]);
 
+  const handleCursorWheel = useCallback((event: ReactWheelEvent<HTMLDivElement>) => {
+    handlePagedScrollNavigation(
+      event,
+      cursorPage,
+      2, // totalPages
+      setCursorPage,
+      cursorScrollDeltaRef,
+      cursorScrollLockRef
+    );
+  }, [handlePagedScrollNavigation, cursorPage]);
+
   // Load featured mods when store tab is opened
 
   // Load featured mods when store tab is opened
@@ -6780,7 +6862,7 @@ export default function Launcher() {
   const sidebarTabs = useMemo(() => [
     { id: "home" as const, icon: playNewIcon, label: "Play", isSvg: true },
     { id: "versions" as const, icon: versionIcon, label: "Versions", isSvg: true },
-    { id: "servers" as const, icon: nametagIcon, label: "Achievements", isSvg: true },
+    { id: "servers" as const, icon: nametagIcon, label: "Misc Store", isSvg: true },
     { id: "news" as const, icon: newsIcon, label: "Skins", isSvg: true },
   ], []);
 
@@ -6809,9 +6891,9 @@ export default function Launcher() {
         <div className="relative flex-1 overflow-hidden bg-[#09090b]">
           {/* Premium smooth fade overlay at top */}
           <div 
-            className="absolute top-0 left-0 right-0 h-24 z-50 pointer-events-none"
+            className="absolute top-0 left-0 right-0 h-16 z-50 pointer-events-none"
             style={{
-              background: 'linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.95) 15%, rgba(0,0,0,0.85) 30%, rgba(0,0,0,0.7) 45%, rgba(0,0,0,0.5) 60%, rgba(0,0,0,0.25) 75%, rgba(0,0,0,0.1) 85%, transparent 100%)'
+              background: 'linear-gradient(to bottom, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.5) 40%, rgba(0,0,0,0.1) 75%, transparent 100%)'
             }}
           />
           
@@ -6888,12 +6970,14 @@ export default function Launcher() {
             <div
               className="absolute inset-0"
               style={{
-                background: 'linear-gradient(to bottom, transparent 0%, transparent 20%, rgba(9,9,11,0.3) 50%, rgba(9,9,11,0.7) 70%, #09090b 100%)',
+                background: activeLoader === 'quilt'
+                  ? 'linear-gradient(to bottom, transparent 0%, transparent 20%, rgba(9,9,11,0.5) 50%, rgba(9,9,11,0.9) 80%, #09090b 100%)'
+                  : 'linear-gradient(to bottom, transparent 0%, transparent 40%, rgba(9,9,11,0.4) 65%, rgba(9,9,11,0.8) 85%, #09090b 100%)',
                 zIndex: 4
               }}
             />
             {/* Subtle top vignette */}
-            <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-transparent" style={{ zIndex: 3 }} />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-transparent" style={{ zIndex: 3 }} />
             
             {/* Corner blur overlays - Left and Right */}
             <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 4 }}>
@@ -7080,7 +7164,7 @@ export default function Launcher() {
           {/* Footer */}
           <div className="absolute bottom-4 left-0 right-0 flex items-center justify-between px-6 text-xs text-zinc-600">
             <span></span>
-            <span>v{formatVersionDisplay(selectedVersion || "")}</span>
+            <span style={{ fontFamily: "'Panchang', sans-serif" }}>v{formatVersionDisplay(selectedVersion || "")}</span>
           </div>
         </div>
       </div>
@@ -9129,7 +9213,7 @@ export default function Launcher() {
             <div className="h-full flex items-center justify-center p-8">
               <div className="max-w-6xl w-full">
                 <div className="text-center mb-8">
-                  <h2 className="text-3xl font-bold text-white mb-2" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>Choose Your Skin</h2>
+                  <h2 className="text-3xl font-bold text-white mb-2 tracking-wide" style={{ fontFamily: "'Panchang', sans-serif" }}>CHOOSE YOUR SKIN</h2>
                   <p className="text-zinc-400">Select a skin to customize your appearance</p>
                 </div>
                 
@@ -9147,7 +9231,7 @@ export default function Launcher() {
             <div className="h-full flex items-center justify-center p-8">
               <div className="max-w-6xl w-full">
                 <div className="text-center mb-8">
-                  <h2 className="text-3xl font-bold text-white mb-2" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>Choose Your Cape</h2>
+                  <h2 className="text-3xl font-bold text-white mb-2 tracking-wide" style={{ fontFamily: "'Panchang', sans-serif" }}>CHOOSE YOUR CAPE</h2>
                   <p className="text-zinc-400">Select a cape to customize your appearance</p>
                 </div>
                 
@@ -9231,7 +9315,7 @@ export default function Launcher() {
                       }`}
                     >
                       <div className="flex items-center justify-center">
-                        <h3 className="text-white font-medium text-sm" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>Remove Cape</h3>
+                        <h3 className="text-white font-medium text-sm tracking-widest" style={{ fontFamily: "'Panchang', sans-serif" }}>REMOVE CAPE</h3>
                       </div>
                     </button>
                   </div>
@@ -10279,7 +10363,7 @@ export default function Launcher() {
       <div className="flex flex-col h-screen bg-black overflow-hidden">
         {/* Draggable Title Bar */}
         <div
-          className="h-8 bg-black border-b border-zinc-950 flex-shrink-0 flex items-center justify-between px-4 relative z-[120]"
+          className={`h-8 bg-black border-b border-zinc-950 flex-shrink-0 flex items-center justify-between px-4 relative z-[120] transition-opacity duration-300 ${isInstalling ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
           data-tauri-drag-region
           style={{ paddingLeft: '80px' }}
         >
@@ -10288,7 +10372,7 @@ export default function Launcher() {
         </div>
 
         {/* Top Bar with Zimoxy-style Loader Tabs */}
-        <div className="bg-black border-b border-zinc-950 px-3 relative z-[110]" style={{ paddingLeft: '80px' }}>
+        <div className={`bg-black border-b border-zinc-950 px-3 relative z-[110] transition-opacity duration-300 ${isInstalling ? 'opacity-0 pointer-events-none' : 'opacity-100'}`} style={{ paddingLeft: '80px' }}>
           
           <div className="flex items-center gap-0 relative">
             {/* Loader Tabs */}
@@ -10550,12 +10634,18 @@ export default function Launcher() {
                 <div 
                   className="flex-1 relative overflow-hidden"
                   style={{
-                    backgroundImage: 'url(/servers-4k.png)',
+                    backgroundImage: 'url(/misc.jpg)',
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                     backgroundRepeat: 'no-repeat',
                   }}
                 >
+                  {/* Red Hue Overlay for Cursors */}
+                  <div 
+                    className={`absolute inset-0 bg-red-600/40 mix-blend-color pointer-events-none transition-opacity duration-500 ${miscStoreCategory === 'cursors' ? 'opacity-100' : 'opacity-0'}`} 
+                    style={{ zIndex: 10 }} 
+                  />
+                  
                   {/* Header fade overlay - BIGGER */}
                   <div 
                     className="absolute top-0 left-0 right-0 h-64 pointer-events-none"
@@ -10569,73 +10659,105 @@ export default function Launcher() {
                   <div className="absolute top-0 left-0 right-0 pt-12 pb-4 pointer-events-none" style={{ zIndex: 60 }}>
                     <div className="max-w-7xl mx-auto px-8">
                       <div className="text-center">
-                        <h1 className="text-6xl font-bold text-white tracking-tight" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>
-                          YOUR ACHIEVEMENTS
+                        <h1 className="text-6xl font-bold text-white tracking-tight" style={{ fontFamily: "'Panchang', sans-serif" }}>
+                          CURSORS
                         </h1>
                       </div>
                     </div>
                   </div>
                   
-                  {/* Achievements Content */}
-                  <div className="absolute inset-0 flex flex-col" style={{ zIndex: 10 }}>
-                    {/* Scrollable Content */}
-                    <div className="flex-1 overflow-y-auto pt-32">
-                      <div className="max-w-7xl mx-auto px-8 pt-2">
-                        {/* Achievements Grid - 2x3 layout with clean minimal cards */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-8">
-                          {paginatedAchievements.map((achievement) => (
-                            <div
-                              key={achievement.id}
-                              className={`relative p-6 rounded-xl transition-all duration-300 ${
-                                achievement.unlocked
-                                  ? 'bg-white/95 hover:bg-white shadow-lg hover:shadow-xl'
-                                  : 'bg-white/40 hover:bg-white/50 shadow-md'
-                              }`}
+                  <div className="absolute inset-x-0 bottom-0 top-[200px] overflow-y-auto p-8 pointer-events-auto" style={{ zIndex: 50 }}>
+                    <div className="relative max-w-7xl mx-auto w-full group">
+                      
+                      {(() => {
+                        const ALL_CURSORS = [
+                          { id: 1, color: '#98f576', cursor1: '/netherite-frame-0.png', cursor2: null },
+                          { id: 2, color: '#f576a3', cursor1: '/jujutsu-cursor.png', cursor2: '/jujutsu-pointer.png' },
+                          { id: 3, color: '#76b5f5', cursor1: '/demon-slayer-cursor.png', cursor2: '/demon-slayer-pointer.png' },
+                          { id: 4, color: '#ffc745', cursor1: '/fifa-cursor.png', cursor2: '/fifa-pointer.png' },
+                          { id: 5, color: '#a9a3b8', cursor1: '/hollow-knight-cursor.png', cursor2: '/hollow-knight-pointer.png' },
+                          { id: 6, color: '#f576e2', cursor1: '/preppy-pink-cursor.png', cursor2: '/preppy-pink-pointer.png' }
+                        ];
+                        const CURSORS_PER_PAGE = 4;
+                        const totalPages = Math.ceil(ALL_CURSORS.length / CURSORS_PER_PAGE);
+                        const paginatedCursors = ALL_CURSORS.slice(cursorPage * CURSORS_PER_PAGE, (cursorPage + 1) * CURSORS_PER_PAGE);
+                        
+                        return (
+                          <div className="flex flex-col items-center w-full">
+                            <div 
+                              className="flex justify-center gap-6 overflow-x-auto snap-x hide-scrollbar px-4 py-4 w-full" 
+                              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                              onWheelCapture={handleCursorWheel}
                             >
-                              {/* Icon as overlay with dark background */}
-                              <div className="absolute top-6 left-1/2 -translate-x-1/2 z-10">
-                                <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center shadow-lg">
-                                  <img
-                                    src={achievement.icon}
-                                    alt={achievement.name}
-                                    className="w-14 h-14 object-contain"
-                                    style={{
-                                      filter: achievement.unlocked ? 'brightness(1.2) contrast(1.1)' : 'grayscale(100%) opacity(0.6)'
+                              {paginatedCursors.map((cursor) => (
+                                <div 
+                                  key={cursor.id} 
+                                  onClick={() => {
+                                    setEquippedCursor(cursor.id);
+                                    localStorage.setItem('dragon_equipped_cursor', cursor.id.toString());
+                                    new Audio('/select.mp3').play();
+                                  }}
+                                  className={`snap-center shrink-0 rounded-[1.5rem] p-2 flex flex-col w-[280px] text-black border-2 transition-all duration-500 ease-out cursor-pointer hover:scale-105 shadow-2xl ${
+                                    equippedCursor === cursor.id 
+                                      ? 'bg-black border-black shadow-[0_0_30px_rgba(0,0,0,0.6)]' 
+                                      : 'bg-white border-black/5'
+                                  }`}
+                                >
+                                  {/* Top Section */}
+                                  <div 
+                                    className="relative p-8 flex items-center justify-center min-h-[200px]" 
+                                    style={{ 
+                                      backgroundColor: equippedCursor === cursor.id ? '#000000' : cursor.color, 
+                                      backgroundImage: 'url(/background-1.svg)', 
+                                      backgroundSize: 'cover', 
+                                      backgroundPosition: 'center', 
+                                      backgroundBlendMode: 'overlay', 
+                                      borderRadius: '1.25rem'
                                     }}
-                                  />
+                                  >
+                                    {/* Cursor Previews Side by Side */}
+                                    <div className="flex items-center justify-center gap-6">
+                                      <img src={cursor.cursor1} alt="Cursor 1" className="w-24 h-24 object-contain drop-shadow-lg hover:scale-110 transition-transform duration-300" />
+                                      {cursor.cursor2 && <img src={cursor.cursor2} alt="Cursor 2" className="w-24 h-24 object-contain drop-shadow-lg hover:scale-110 transition-transform duration-300" />}
+                                    </div>
+                                  </div>
                                 </div>
-                              </div>
-
-                              {/* Content */}
-                              <div className="mt-28">
-                                <h3 className={`text-base font-bold mb-1.5 tracking-tight ${achievement.unlocked ? 'text-black' : 'text-black'}`} style={{ fontFamily: 'Inter, system-ui, -apple-system, sans-serif' }}>
-                                  {achievement.name}
-                                </h3>
-                                <p className={`text-sm leading-relaxed ${achievement.unlocked ? 'text-gray-600' : 'text-white'}`} style={{ fontFamily: 'Inter, system-ui, -apple-system, sans-serif' }}>
-                                  {achievement.description}
-                                </p>
-                              </div>
+                              ))}
                             </div>
-                          ))}
-                        </div>
-
-                        {/* Pagination */}
-                        {totalAchievementPages > 1 && (
-                          <div className="flex items-center justify-center gap-2">
-                            {Array.from({ length: totalAchievementPages }).map((_, i) => (
-                              <button
-                                key={i}
-                                onClick={() => setAchievementPage(i)}
-                                className={`transition-all ${
-                                  i === achievementPage
-                                    ? 'w-16 h-2 bg-white shadow-lg'
-                                    : 'w-2 h-2 bg-white/50 hover:bg-white/70 shadow-md'
-                                } rounded-full`}
-                              />
-                            ))}
+                            
+                            {/* Dot Pagination */}
+                            {totalPages > 1 && (
+                              <div className="flex items-center gap-2 mt-6">
+                                {cursorPage > 0 && (
+                                  <button
+                                    onClick={() => setCursorPage(Math.max(0, cursorPage - 1))}
+                                    className="w-3 h-3 bg-white/40 hover:bg-white/60 rounded-full transition-all duration-300"
+                                  />
+                                )}
+                                
+                                {Array.from({ length: totalPages }).map((_, i) => (
+                                  <button
+                                    key={i}
+                                    onClick={() => setCursorPage(i)}
+                                    className={`transition-all duration-300 ${
+                                      cursorPage === i
+                                        ? 'w-8 h-3 bg-white rounded-full'
+                                        : 'w-3 h-3 bg-white/40 hover:bg-white/60 rounded-full'
+                                    }`}
+                                  />
+                                ))}
+                                
+                                {cursorPage < totalPages - 1 && (
+                                  <button
+                                    onClick={() => setCursorPage(Math.min(totalPages - 1, cursorPage + 1))}
+                                    className="w-3 h-3 bg-white/40 hover:bg-white/60 rounded-full transition-all duration-300"
+                                  />
+                                )}
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
+                        );
+                      })()}
                     </div>
                   </div>
                 </div>
@@ -10661,12 +10783,18 @@ export default function Launcher() {
                   <div 
                     className="flex-1 relative overflow-hidden"
                     style={{
-                      backgroundImage: 'url(/servers-4k.png)',
+                      backgroundImage: 'url(/misc.jpg)',
                       backgroundSize: 'cover',
                       backgroundPosition: 'center',
                       backgroundRepeat: 'no-repeat',
                     }}
                   >
+                    {/* Red Hue Overlay for Cursors */}
+                    <div 
+                      className={`absolute inset-0 bg-red-600/40 mix-blend-color pointer-events-none transition-opacity duration-500 ${miscStoreCategory === 'cursors' ? 'opacity-100' : 'opacity-0'}`} 
+                      style={{ zIndex: 10 }} 
+                    />
+                    
                     {/* Header fade overlay - BIGGER */}
                     <div 
                       className="absolute top-0 left-0 right-0 h-64 pointer-events-none"
@@ -10680,78 +10808,108 @@ export default function Launcher() {
                     <div className="absolute top-0 left-0 right-0 pt-12 pb-4 pointer-events-none" style={{ zIndex: 60 }}>
                       <div className="max-w-7xl mx-auto px-8">
                         <div className="text-center">
-                          <h1 className="text-6xl font-bold text-white tracking-tight" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>
-                            YOUR ACHIEVEMENTS
+                          <h1 className="text-6xl font-bold text-white tracking-tight" style={{ fontFamily: "'Panchang', sans-serif" }}>
+                            CURSORS
                           </h1>
                         </div>
                       </div>
                     </div>
-                    
-                    {/* Achievements Content */}
-                    <div className="absolute inset-0 flex flex-col" style={{ zIndex: 10 }}>
-                      {/* Scrollable Content */}
-                      <div className="flex-1 overflow-y-auto pt-32">
-                        <div className="max-w-7xl mx-auto px-8 pt-2">
-                          {/* Achievements Grid - 2x3 layout with clean minimal cards */}
-                          <AnimatePresence mode="wait">
-                            <motion.div
-                              key={achievementPage}
-                              initial={{ opacity: 0, x: 50 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              exit={{ opacity: 0, x: -50 }}
-                              transition={{ duration: 0.3, ease: "easeInOut" }}
-                              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-8"
+                  
+                  <div className="absolute inset-x-0 bottom-0 top-[200px] overflow-y-auto p-8 pointer-events-auto" style={{ zIndex: 50 }}>
+                    <div className="relative max-w-7xl mx-auto w-full group">
+                      
+                      {(() => {
+                        const ALL_CURSORS = [
+                          { id: 1, color: '#98f576', cursor1: '/netherite-frame-0.png', cursor2: null },
+                          { id: 2, color: '#f576a3', cursor1: '/jujutsu-cursor.png', cursor2: '/jujutsu-pointer.png' },
+                          { id: 3, color: '#76b5f5', cursor1: '/demon-slayer-cursor.png', cursor2: '/demon-slayer-pointer.png' },
+                          { id: 4, color: '#ffc745', cursor1: '/fifa-cursor.png', cursor2: '/fifa-pointer.png' },
+                          { id: 5, color: '#a9a3b8', cursor1: '/hollow-knight-cursor.png', cursor2: '/hollow-knight-pointer.png' },
+                          { id: 6, color: '#f576e2', cursor1: '/preppy-pink-cursor.png', cursor2: '/preppy-pink-pointer.png' }
+                        ];
+                        const CURSORS_PER_PAGE = 4;
+                        const totalPages = Math.ceil(ALL_CURSORS.length / CURSORS_PER_PAGE);
+                        const paginatedCursors = ALL_CURSORS.slice(cursorPage * CURSORS_PER_PAGE, (cursorPage + 1) * CURSORS_PER_PAGE);
+                        
+                        return (
+                          <div className="flex flex-col items-center w-full">
+                            <div 
+                              className="flex justify-center gap-6 overflow-x-auto snap-x hide-scrollbar px-4 py-4 w-full" 
+                              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                              onWheelCapture={handleCursorWheel}
                             >
-                              {paginatedAchievements.map((achievement) => (
-                                <div
-                                  key={achievement.id}
-                                  className={`relative p-6 rounded-xl transition-all duration-300 ${
-                                    achievement.unlocked
-                                      ? 'bg-white/95 hover:bg-white shadow-lg hover:shadow-xl'
-                                      : 'bg-white/40 hover:bg-white/50 shadow-md'
-                                  }`}
-                                  style={{
-                                    backgroundImage: `url(${achievement.icon})`,
-                                    backgroundSize: '80px 80px',
-                                    backgroundPosition: 'center 24px',
-                                    backgroundRepeat: 'no-repeat',
-                                    filter: achievement.unlocked ? 'none' : 'grayscale(100%) opacity(0.6)'
+                              {paginatedCursors.map((cursor) => (
+                                <div 
+                                  key={cursor.id} 
+                                  onClick={() => {
+                                    setEquippedCursor(cursor.id);
+                                    localStorage.setItem('dragon_equipped_cursor', cursor.id.toString());
+                                    new Audio('/select.mp3').play();
                                   }}
+                                  className={`snap-center shrink-0 rounded-[1.5rem] p-2 flex flex-col w-[280px] text-black border-2 transition-all duration-500 ease-out cursor-pointer hover:scale-105 shadow-2xl ${
+                                    equippedCursor === cursor.id 
+                                      ? 'bg-black border-black shadow-[0_0_30px_rgba(0,0,0,0.6)]' 
+                                      : 'bg-white border-black/5'
+                                  }`}
                                 >
-                                  {/* Content */}
-                                  <div className="mt-28">
-                                    <h3 className={`text-base font-bold mb-1.5 tracking-tight ${achievement.unlocked ? 'text-black' : 'text-gray-500'}`} style={{ fontFamily: 'Inter, system-ui, -apple-system, sans-serif' }}>
-                                      {achievement.name}
-                                    </h3>
-                                    <p className={`text-sm leading-relaxed ${achievement.unlocked ? 'text-gray-600' : 'text-gray-400'}`} style={{ fontFamily: 'Inter, system-ui, -apple-system, sans-serif' }}>
-                                      {achievement.description}
-                                    </p>
+                                  {/* Top Section */}
+                                  <div 
+                                    className="relative p-8 flex items-center justify-center min-h-[200px]" 
+                                    style={{ 
+                                      backgroundColor: equippedCursor === cursor.id ? '#000000' : cursor.color, 
+                                      backgroundImage: 'url(/background-1.svg)', 
+                                      backgroundSize: 'cover', 
+                                      backgroundPosition: 'center', 
+                                      backgroundBlendMode: 'overlay', 
+                                      borderRadius: '1.25rem'
+                                    }}
+                                  >
+                                    {/* Cursor Previews Side by Side */}
+                                    <div className="flex items-center justify-center gap-6">
+                                      <img src={cursor.cursor1} alt="Cursor 1" className="w-24 h-24 object-contain drop-shadow-lg hover:scale-110 transition-transform duration-300" />
+                                      {cursor.cursor2 && <img src={cursor.cursor2} alt="Cursor 2" className="w-24 h-24 object-contain drop-shadow-lg hover:scale-110 transition-transform duration-300" />}
+                                    </div>
                                   </div>
                                 </div>
                               ))}
-                            </motion.div>
-                          </AnimatePresence>
-
-                          {/* Pagination */}
-                          {totalAchievementPages > 1 && (
-                            <div className="flex items-center justify-center gap-2">
-                              {Array.from({ length: totalAchievementPages }).map((_, i) => (
-                                <button
-                                  key={i}
-                                  onClick={() => setAchievementPage(i)}
-                                  className={`transition-all ${
-                                    i === achievementPage
-                                      ? 'w-16 h-2 bg-white shadow-lg'
-                                      : 'w-2 h-2 bg-white/50 hover:bg-white/70 shadow-md'
-                                  } rounded-full`}
-                                />
-                              ))}
                             </div>
-                          )}
-                        </div>
-                      </div>
+                            
+                            {/* Dot Pagination */}
+                            {totalPages > 1 && (
+                              <div className="flex items-center gap-2 mt-6">
+                                {cursorPage > 0 && (
+                                  <button
+                                    onClick={() => setCursorPage(Math.max(0, cursorPage - 1))}
+                                    className="w-3 h-3 bg-white/40 hover:bg-white/60 rounded-full transition-all duration-300"
+                                  />
+                                )}
+                                
+                                {Array.from({ length: totalPages }).map((_, i) => (
+                                  <button
+                                    key={i}
+                                    onClick={() => setCursorPage(i)}
+                                    className={`transition-all duration-300 ${
+                                      cursorPage === i
+                                        ? 'w-8 h-3 bg-white rounded-full'
+                                        : 'w-3 h-3 bg-white/40 hover:bg-white/60 rounded-full'
+                                    }`}
+                                  />
+                                ))}
+                                
+                                {cursorPage < totalPages - 1 && (
+                                  <button
+                                    onClick={() => setCursorPage(Math.min(totalPages - 1, cursorPage + 1))}
+                                    className="w-3 h-3 bg-white/40 hover:bg-white/60 rounded-full transition-all duration-300"
+                                  />
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
+                </div>
                 )}
                 {activeTab === "news" && renderNews()}
                 {activeTab === "store" && renderStore()}

@@ -319,7 +319,7 @@ export const SkinGallery: React.FC<SkinGalleryProps> = ({
             className={`w-full bg-zinc-900 rounded-lg p-6 cursor-pointer transition-all hover:bg-zinc-800`}
           >
             <div className="flex items-center justify-center">
-              <h3 className="text-white font-medium text-sm" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>Remove Skin</h3>
+              <h3 className="text-white font-medium text-sm tracking-widest" style={{ fontFamily: "'Panchang', sans-serif" }}>REMOVE SKIN</h3>
             </div>
           </button>
         </div>

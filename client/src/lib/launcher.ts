@@ -164,7 +164,9 @@ export const launcherApi = {
     uuid?: string,
     accessToken?: string,
     onLog?: (line: string) => void,
-    dragonModSource: 'github' | 'local' = 'github'
+    dragonModSource: 'github' | 'local' = 'github',
+    cursorImageBase64?: string,
+    pointerImageBase64?: string
   ): Promise<void> {
     try {
       // @ts-ignore
@@ -195,7 +197,7 @@ export const launcherApi = {
       }
 
       try {
-        await invoke('launch_game', { versionId, username, uuid, accessToken, oderId, tier, dragonModSource });
+        await invoke('launch_game', { versionId, username, uuid, accessToken, oderId, tier, dragonModSource, cursorImageBase64, pointerImageBase64 });
       } finally {
         // Don't unlisten immediately - keep listening for logs while game runs
         // The listener will be cleaned up when the component unmounts

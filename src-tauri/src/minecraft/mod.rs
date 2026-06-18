@@ -131,6 +131,9 @@ pub struct LaunchOptions {
     pub prefer_local_dragon_mod: bool,
     pub is_offline: bool,
     pub skin_username: Option<String>,
+    pub cursor_image_base64: Option<String>,
+    pub pointer_image_base64: Option<String>,
+    pub cursor_agent_jar_path: Option<String>,
 }
 
 impl MinecraftLauncher {
@@ -5543,6 +5546,97 @@ impl MinecraftLauncher {
             log_callback("[DragonSkins] JVM agent loaded".to_string());
         } else {
             log_callback("[DragonSkins] Agent not found, custom skins disabled".to_string());
+        }
+
+        // Add Dragon Cursor Agent for custom cursor support (SEPARATE from DragonSkins)
+        if let Some(ref b64) = options.cursor_image_base64 {
+            let cursor_agent_dir = self.game_dir.join("DragonCursor");
+            let cursor_agent_dest = cursor_agent_dir.join("dragon-cursor-agent.jar");
+            let _ = std::fs::create_dir_all(&cursor_agent_dir);
+            
+            // Write the cursor image to disk
+            let cursor_png_path = cursor_agent_dir.join("cursor.png");
+            let b64_data = if b64.contains("base64,") {
+                b64.split("base64,").nth(1).unwrap_or(b64)
+            } else {
+                b64
+            };
+            
+            use base64::{Engine as _, engine::general_purpose};
+            match general_purpose::STANDARD.decode(b64_data) {
+                Ok(bytes) => {
+                    if let Err(e) = std::fs::write(&cursor_png_path, bytes) {
+                        log_callback(format!("[DragonCursor] Failed to write cursor image: {}", e));
+                    }
+                }
+                Err(e) => {
+                    log_callback(format!("[DragonCursor] Failed to decode cursor image: {}", e));
+                }
+            }
+
+            // Write the pointer image to disk if available
+            let pointer_png_path = cursor_agent_dir.join("pointer.png");
+            if let Some(ref pointer_b64) = options.pointer_image_base64 {
+                let p_b64_data = if pointer_b64.contains("base64,") {
+                    pointer_b64.split("base64,").nth(1).unwrap_or(pointer_b64)
+                } else {
+                    pointer_b64
+                };
+                match general_purpose::STANDARD.decode(p_b64_data) {
+                    Ok(bytes) => {
+                        if let Err(e) = std::fs::write(&pointer_png_path, bytes) {
+                            log_callback(format!("[DragonCursor] Failed to write pointer image: {}", e));
+                        }
+                    }
+                    Err(e) => {
+                        log_callback(format!("[DragonCursor] Failed to decode pointer image: {}", e));
+                    }
+                }
+            }
+
+            // Install cursor agent from bundled resources
+            if !cursor_agent_dest.exists() {
+                // Try to find bundled agent in resources
+                let mut resource_candidates = vec![
+                    self.game_dir.join("dragon-cursor-agent.jar"),
+                    std::env::current_exe()
+                        .unwrap_or_default()
+                        .parent()
+                        .unwrap_or(std::path::Path::new("."))
+                        .join("dragon-cursor-agent.jar"),
+                    std::env::current_exe()
+                        .unwrap_or_default()
+                        .parent()
+                        .unwrap_or(std::path::Path::new("."))
+                        .join("../Resources/dragon-cursor-agent.jar"),
+                ];
+                
+                if let Some(ref path) = options.cursor_agent_jar_path {
+                    resource_candidates.insert(0, std::path::PathBuf::from(path));
+                }
+                
+                for candidate in &resource_candidates {
+                    if candidate.exists() {
+                        if let Err(e) = std::fs::copy(candidate, &cursor_agent_dest) {
+                            log_callback(format!("[DragonCursor] Failed to copy agent: {}", e));
+                        } else {
+                            log_callback(format!("[DragonCursor] Agent installed from {:?}", candidate));
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            if cursor_agent_dest.exists() && cursor_png_path.exists() {
+                args.push(format!("-javaagent:{}", cursor_agent_dest.to_string_lossy()));
+                args.push(format!("-Ddragon.cursor.image={}", cursor_png_path.to_string_lossy()));
+                if pointer_png_path.exists() {
+                    args.push(format!("-Ddragon.pointer.image={}", pointer_png_path.to_string_lossy()));
+                }
+                log_callback("[DragonCursor] Cursor agent loaded successfully".to_string());
+            } else {
+                log_callback("[DragonCursor] Agent JAR not found, custom cursor disabled".to_string());
+            }
         }
 
         // Detect LWJGL version to use correct flags (use parent version for modded)
