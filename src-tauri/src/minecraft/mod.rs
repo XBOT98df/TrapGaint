@@ -5548,11 +5548,8 @@ impl MinecraftLauncher {
             log_callback("[DragonSkins] Agent not found, custom skins disabled".to_string());
         }
 
-        // Add Dragon Cursor Agent for custom cursor support (macOS only)
-        // On Windows, ByteBuddy RETRANSFORMATION of LWJGL classes crashes the JVM due to
-        // stricter class-loading security. The launcher UI cursor still works via CSS.
-        #[cfg(not(target_os = "windows"))]
-        if let Some(ref b64) = options.cursor_image_base64 { // macOS-only block start
+        // Add Dragon Cursor Agent for custom cursor support
+        if let Some(ref b64) = options.cursor_image_base64 {
             let cursor_agent_dir = self.game_dir.join("DragonCursor");
             let cursor_agent_dest = cursor_agent_dir.join("dragon-cursor-agent.jar");
             let _ = std::fs::create_dir_all(&cursor_agent_dir);
@@ -5640,7 +5637,7 @@ impl MinecraftLauncher {
             } else {
                 log_callback("[DragonCursor] Agent JAR not found, custom cursor disabled".to_string());
             }
-        } // end macOS-only block
+        }
 
         // Detect LWJGL version to use correct flags (use parent version for modded)
         let lwjgl_version = Self::detect_lwjgl_version(effective_version_json);
