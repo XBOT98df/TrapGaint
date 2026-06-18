@@ -219,8 +219,15 @@ jobs:
             case $platform in
               darwin-x86_64) file="TrapGaint_x64.app.tar.gz" ;;
               darwin-aarch64) file="TrapGaint_aarch64.app.tar.gz" ;;
-              windows-x86_64) file="TrapGaint_1.0.2_x64_en-US.msi.zip" ;;
+              windows-x86_64)
+                file="$(ls -1 TrapGaint_*_x64_en-US.msi.sig TrapGaint_*_x64-setup.exe.sig 2>/dev/null | head -n 1 | sed 's/\.sig$//' || true)"
+                ;;
             esac
+
+            if [ -z "$file" ]; then
+              echo "No updater asset found for ${platform}; skipping"
+              continue
+            fi
             
             sig_file="${file}.sig"
             
