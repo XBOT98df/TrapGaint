@@ -200,39 +200,38 @@ jobs:
           # Download signature files from release
           gh release download "v${VERSION}" --pattern "*.sig" || echo "No signature files yet"
           
-          # Create platform-specific updater JSONs
+          # Create platform-specific updater JSONs and aggregate them into latest.json
+          PLATFORMS_JSON=""
+          
           for platform in darwin-x86_64 darwin-aarch64 windows-x86_64; do
             case $platform in
-              darwin-x86_64)
-                file="TrapGaint_x64.app.tar.gz"
-                ;;
-              darwin-aarch64)
-                file="TrapGaint_aarch64.app.tar.gz"
-                ;;
-              windows-x86_64)
-                file="TrapGaint_1.0.1_x64_en-US.msi.zip"
-                ;;
+              darwin-x86_64) file="TrapGaint_x64.app.tar.gz" ;;
+              darwin-aarch64) file="TrapGaint_aarch64.app.tar.gz" ;;
+              windows-x86_64) file="TrapGaint_1.0.2_x64_en-US.msi.zip" ;;
             esac
             
             sig_file="${file}.sig"
             
             if [ -f "$sig_file" ]; then
               signature=$(cat "$sig_file")
+              # Add comma if not the first entry
+              if [ -n "$PLATFORMS_JSON" ]; then
+                PLATFORMS_JSON="${PLATFORMS_JSON},"
+              fi
+              PLATFORMS_JSON="${PLATFORMS_JSON}\"${platform}\": {\"signature\": \"${signature}\", \"url\": \"${RELEASE_URL}/${file}\"}"
+              
+              # Still generate individual files just in case
               printf '{\n  "version": "%s",\n  "notes": "TrapGaint v%s",\n  "pub_date": "%s",\n  "platforms": {\n    "%s": {\n      "signature": "%s",\n      "url": "%s"\n    }\n  }\n}\n' \
-                "${VERSION}" \
-                "${VERSION}" \
-                "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-                "${platform}" \
-                "${signature}" \
-                "${RELEASE_URL}/${file}" > "${platform}.json"
-              echo "Created ${platform}.json"
-            else
-              echo "Warning: ${sig_file} not found, skipping ${platform}"
+                "${VERSION}" "${VERSION}" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "${platform}" "${signature}" "${RELEASE_URL}/${file}" > "${platform}.json"
             fi
           done
           
+          # Generate the final comprehensive latest.json
+          printf '{\n  "version": "%s",\n  "notes": "TrapGaint v%s",\n  "pub_date": "%s",\n  "platforms": {%s}\n}\n' \
+            "${VERSION}" "${VERSION}" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "${PLATFORMS_JSON}" > latest.json
+          
           # Upload updater JSONs to release
-          for json in *.json; do
+          for json in *.json latest.json; do
             if [ -f "$json" ]; then
               gh release upload "v${VERSION}" "$json" --repo ${{ github.repository }} --clobber
               echo "Uploaded $json"
