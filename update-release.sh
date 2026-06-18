@@ -62,8 +62,8 @@ gh release download "${RELEASE_TAG}" -p "*.sig" --clobber
 
 # Check if required signature files exist
 REQUIRED_SIGS=(
-    "Dragon.Client_aarch64.app.tar.gz.sig"
-    "Dragon.Client_x64.app.tar.gz.sig"
+    "TrapGaint_aarch64.app.tar.gz.sig"
+    "TrapGaint_x64.app.tar.gz.sig"
 )
 
 for sig_file in "${REQUIRED_SIGS[@]}"; do
@@ -75,9 +75,9 @@ for sig_file in "${REQUIRED_SIGS[@]}"; do
 done
 
 # Windows file may not match release tag version (e.g., release v2.0.75 contains 2.0.73 artifacts)
-WINDOWS_SIG_FILE=$(ls Dragon.Client_*_x64_en-US.msi.sig 2>/dev/null | head -n 1)
+WINDOWS_SIG_FILE=$(ls TrapGaint_*_x64_en-US.msi.sig 2>/dev/null | head -n 1)
 if [ -z "$WINDOWS_SIG_FILE" ]; then
-    echo "❌ Missing Windows signature file: Dragon.Client_*_x64_en-US.msi.sig"
+    echo "❌ Missing Windows signature file: TrapGaint_*_x64_en-US.msi.sig"
     exit 1
 fi
 WINDOWS_MSI_FILE="${WINDOWS_SIG_FILE%.sig}"
@@ -92,9 +92,9 @@ import json
 from datetime import datetime
 
 # Read signatures
-with open('Dragon.Client_aarch64.app.tar.gz.sig', 'r') as f:
+with open('TrapGaint_aarch64.app.tar.gz.sig', 'r') as f:
     sig_aarch64 = f.read().strip()
-with open('Dragon.Client_x64.app.tar.gz.sig', 'r') as f:
+with open('TrapGaint_x64.app.tar.gz.sig', 'r') as f:
     sig_x64 = f.read().strip()
 with open('${WINDOWS_SIG_FILE}', 'r') as f:
     sig_windows = f.read().strip()
@@ -107,15 +107,15 @@ data = {
     "platforms": {
         "darwin-aarch64": {
             "signature": sig_aarch64,
-            "url": "https://github.com/dhhd67807-lgtm/Block-Launcher/releases/download/${RELEASE_TAG}/Dragon.Client_aarch64.app.tar.gz"
+            "url": "https://github.com/XBOT98df/TrapGaint/releases/download/${RELEASE_TAG}/TrapGaint_aarch64.app.tar.gz"
         },
         "darwin-x86_64": {
             "signature": sig_x64,
-            "url": "https://github.com/dhhd67807-lgtm/Block-Launcher/releases/download/${RELEASE_TAG}/Dragon.Client_x64.app.tar.gz"
+            "url": "https://github.com/XBOT98df/TrapGaint/releases/download/${RELEASE_TAG}/TrapGaint_x64.app.tar.gz"
         },
         "windows-x86_64": {
             "signature": sig_windows,
-            "url": "https://github.com/dhhd67807-lgtm/Block-Launcher/releases/download/${RELEASE_TAG}/${WINDOWS_MSI_FILE}"
+            "url": "https://github.com/XBOT98df/TrapGaint/releases/download/${RELEASE_TAG}/${WINDOWS_MSI_FILE}"
         }
     }
 }
@@ -135,10 +135,10 @@ gh release upload "${RELEASE_TAG}" latest.json --clobber
 echo ""
 echo "✅ Successfully updated release ${RELEASE_TAG}"
 echo ""
-echo "🔗 Verify at: https://github.com/dhhd67807-lgtm/Block-Launcher/releases/tag/${RELEASE_TAG}"
+echo "🔗 Verify at: https://github.com/XBOT98df/TrapGaint/releases/tag/${RELEASE_TAG}"
 echo ""
 echo "🧪 Test the updater JSON:"
-echo "   curl -sL \"https://github.com/dhhd67807-lgtm/Block-Launcher/releases/download/${RELEASE_TAG}/latest.json\" | jq ."
+echo "   curl -sL \"https://github.com/XBOT98df/TrapGaint/releases/download/${RELEASE_TAG}/latest.json\" | jq ."
 echo ""
 echo "🎉 Release update complete!"
 

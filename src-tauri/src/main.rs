@@ -5981,7 +5981,7 @@ async fn check_app_update(app: tauri::AppHandle) -> Result<UpdateCheckResult, St
         .unwrap()
         .as_secs();
 
-    let url = format!("https://github.com/dhhd67807-lgtm/Block-Launcher/releases/latest/download/latest.json?t={}", timestamp);
+    let url = format!("https://github.com/XBOT98df/TrapGaint/releases/latest/download/latest.json?t={}", timestamp);
     println!("[Updater] Fetching: {}", url);
 
     let response = client
@@ -6045,7 +6045,7 @@ async fn check_app_update(app: tauri::AppHandle) -> Result<UpdateCheckResult, St
         current_version,
         latest_version: Some(latest_version),
         download_url: if update_available {
-            Some("https://github.com/dhhd67807-lgtm/Block-Launcher/releases/latest".to_string())
+            Some("https://github.com/XBOT98df/TrapGaint/releases/latest".to_string())
         } else {
             None
         },
@@ -6080,7 +6080,7 @@ async fn perform_app_update(app: tauri::AppHandle, _window: tauri::Window) -> Re
         .unwrap()
         .as_secs();
     let updater_url = format!(
-        "https://github.com/dhhd67807-lgtm/Block-Launcher/releases/latest/download/latest.json?t={}",
+        "https://github.com/XBOT98df/TrapGaint/releases/latest/download/latest.json?t={}",
         timestamp
     );
     let endpoint = reqwest::Url::parse(&updater_url)

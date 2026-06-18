@@ -1,27 +1,19 @@
 {
-  "version": "2.0.95",
-  "notes": "Dragon Client v2.0.95",
-  "pub_date": "2026-03-29T11:11:23Z",
+  "version": "1.0.3",
+  "notes": "Dragon Client v1.0.3",
+  "pub_date": "2026-06-18T11:17:35Z",
   "platforms": {
     "darwin-aarch64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTjNWUGkvNVFUc0RKMkJMNi9IKzVKcnNsaThmRkVMamhicXJSMExXdTZjSzlFV1NBdm9vOCtsRU80SlprVlNXbDVNTDlkQUQ3ZGpBRzBtYW43d05FTTgxTi94ZG5HZXdnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzc0NzgyMTY3CWZpbGU6RHJhZ29uIENsaWVudC5hcHAudGFyLmd6Cm03YVgxY001OXEvczBPUDZxVkZNWmhFMnN6cDlqYUY1ekZteENqTlk1cWVjMUQ1R2hHb2lzNmR6L1pjazZ2T29hTzdUV0x1SWVoMHJnaHVRU0QrTURnPT0K",
-      "url": "https://github.com/dhhd67807-lgtm/Block-Launcher/releases/download/v2.0.94/Dragon.Client_aarch64.app.tar.gz"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTSndCazFwa3VUdTNZczlaRzRLVkgrNTJzNXlFb3pjWUMvblJaU0dPazhQMUxta2RyR2NXOHJwdVJRNGlTVFVFbmZ0K2VRZEhrZ2NNZzNreHRja0VaWWpueTgrU05qaWdZPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgxNzgwODAxCWZpbGU6VHJhcEdhaW50LmFwcC50YXIuZ3oKdUJ6WGlDeUtrNHVyTjZJQnZ3OGx2SE02Y0lLaEw5Y0RmcWxwVG41TFZEdmczYXVRdlR2U0JFTzVMZ1lReS81bng2by8rRnp4Z1IvRjdPMllTZENmQWc9PQo=",
+      "url": "https://github.com/XBOT98df/TrapGaint/releases/download/v1.0.3/TrapGaint_aarch64.app.tar.gz"
     },
     "darwin-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTjNWUGkvNVFUc0dSR0JpQ0h4VVNWd0xLSzJKdkMyMDRqdnRTYjAzLy9zU3JEZTF0MTdxckg4NzZaNklVczArRE9vZFR3bjZ3akc0RGtXQ3pQVWNSTXloSEx1YjFzTHc4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzc0NzgyMTY2CWZpbGU6RHJhZ29uIENsaWVudC5hcHAudGFyLmd6Ck1YbXdrNHRpWmpuTlNyWnhmcDBXc2Q5STJLWWtNaGIyUUtjY1Zsdkc3YWlreUY1N0grMUdDZlhDSjYxNnJncGJKVGZpRlNheDRZbE9mUzBNNjE1L0NBPT0K",
-      "url": "https://github.com/dhhd67807-lgtm/Block-Launcher/releases/download/v2.0.94/Dragon.Client_x64.app.tar.gz"
-    },
-    "windows-x86_64-nsis": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTjNWUGkvNVFUc0FZOVpxTUVzRHo2cVJaOXl6TUpCNDVQcThHRHZrbWZEWm0xaDlIbnBvbTFZSG96QXFFcWtZbWl0MjhjM2FtTDVrTHRjaTVQSmJEQjc3Mk8zR1FkSFFvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzc0NzgyNTU4CWZpbGU6RHJhZ29uIENsaWVudF8yLjAuOTRfeDY0LXNldHVwLmV4ZQpBUDkrN2M1UE5oWHowanhSd3dGcUlqRTJEeHViem5qSjV2MGdUcUZTbUgxSHp1WDVLZUNSVWVPR1g2OTFnblFRTCtWWDhRbE1oTmVMRjdyOEFpWTJBQT09Cg==",
-      "url": "https://github.com/dhhd67807-lgtm/Block-Launcher/releases/download/v2.0.94/Dragon.Client_2.0.94_x64-setup.exe"
-    },
-    "windows-x86_64-msi": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTjNWUGkvNVFUc0pxcTZuc3oweWlxQUdMTzR4MlBiNWoxUXdtY2ErQk82cDFSSENUZkZjOXNWZXNxVmVFb0tKNkU5M0NwanJodVhzSTk2T3I3akZnR3ZJTVcyNDVvelFFPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzc0NzgyNTU4CWZpbGU6RHJhZ29uIENsaWVudF8yLjAuOTRfeDY0X2VuLVVTLm1zaQpLZjdEbTdPempzbTJvTllEUy9GTGdRSGxkYjU4ZjU3VFNUaHY0S082UHR4TnRFZzdFU3FMcytFT2tnM2JZTTZXL2ZCQVp6b09tMkdTNTN4RWNJdnFEUT09Cg==",
-      "url": "https://github.com/dhhd67807-lgtm/Block-Launcher/releases/download/v2.0.94/Dragon.Client_2.0.94_x64_en-US.msi"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTSndCazFwa3VUdTJ1aDV3OTg2ZUUydmlpNE40VUp3SFZhbUYzaXAyTjRQQ1YxbFAxaElSRWltZzlFVm1HaExTS2crendsa1FyRFVuNUZYeFBRcTQ0OUFUSkN1K1BnTkFvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgxNzgwODQzCWZpbGU6VHJhcEdhaW50LmFwcC50YXIuZ3oKME92cFE4bEJRZldCQnZWeEdSbVFnNEN3NklrdDJvTnVmZGNRN2JlRU5rVnRhckRKMm43ZmJGUUJSczB2cEpBUW5qZVNjcU1kNVZUdkR6QVh2bUpUQlE9PQo=",
+      "url": "https://github.com/XBOT98df/TrapGaint/releases/download/v1.0.3/TrapGaint_x64.app.tar.gz"
     },
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTjNWUGkvNVFUc0FZOVpxTUVzRHo2cVJaOXl6TUpCNDVQcThHRHZrbWZEWm0xaDlIbnBvbTFZSG96QXFFcWtZbWl0MjhjM2FtTDVrTHRjaTVQSmJEQjc3Mk8zR1FkSFFvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzc0NzgyNTU4CWZpbGU6RHJhZ29uIENsaWVudF8yLjAuOTRfeDY0LXNldHVwLmV4ZQpBUDkrN2M1UE5oWHowanhSd3dGcUlqRTJEeHViem5qSjV2MGdUcUZTbUgxSHp1WDVLZUNSVWVPR1g2OTFnblFRTCtWWDhRbE1oTmVMRjdyOEFpWTJBQT09Cg==",
-      "url": "https://github.com/dhhd67807-lgtm/Block-Launcher/releases/download/v2.0.94/Dragon.Client_2.0.94_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTSndCazFwa3VUdXhQOFVmT3REUCt6eFlUbDVEbi85d2tad2QvMi9Ic3QzaHE3ai8vZEY5QVpsWDdPRUpvclNieTFvdkhUOFNMbDN5MVpINW8wM3NHN0Q2VDZndS91cVFvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgxNzgxMTMzCWZpbGU6VHJhcEdhaW50XzEuMC4zX3g2NF9lbi1VUy5tc2kKc25yVDR5aHQyV1BGVFdLZGNUbnAzamNZNEpadndGb09YSWk0Q0FqTWJNTGI3cGQ5VkRWTjl3Yjl3SG1OTUZUOWMrR3RDK0M4R3Z6NDFwUHVGRDByREE9PQo=",
+      "url": "https://github.com/XBOT98df/TrapGaint/releases/download/v1.0.3/TrapGaint_1.0.3_x64_en-US.msi"
     }
   }
 }
