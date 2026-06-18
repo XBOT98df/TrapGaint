@@ -215,7 +215,7 @@ export const launcherApi = {
       const { invoke } = await import('@tauri-apps/api/core');
       return await invoke('get_minecraft_dir');
     } catch (e) {
-      return '~/Library/Application Support/lapetus';
+      return '~/Library/Application Support/trapgaint';
     }
   },
 

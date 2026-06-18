@@ -1235,7 +1235,7 @@ async fn get_version_info(
 
     // Instance directory for modded versions
     // For Lapetus, show the visible instances directory (for saves, screenshots)
-    // but the actual game runs from hidden .lapetus-data directory
+    // but the actual game runs from hidden .trapgaint-data directory
     let instance_dir = if is_modded {
         launcher.game_dir.join("instances").join(&version_id)
     } else {

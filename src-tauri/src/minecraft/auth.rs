@@ -138,24 +138,24 @@ struct MinecraftSkin {
 fn get_auth_file_path() -> PathBuf {
     let home = dirs::home_dir().unwrap_or_default();
 
-    // Use .lapetus directory to match the game directory
+    // Use .trapgaint directory to match the game directory
     #[cfg(target_os = "macos")]
-    let lapetus_dir = home.join("Library/Application Support/lapetus");
+    let trapgaint_dir = home.join("Library/Application Support/trapgaint");
 
     #[cfg(target_os = "windows")]
-    let lapetus_dir = {
+    let trapgaint_dir = {
         if let Ok(appdata) = std::env::var("APPDATA") {
-            PathBuf::from(appdata).join(".lapetus")
+            PathBuf::from(appdata).join(".trapgaint")
         } else {
-            home.join("AppData").join("Roaming").join(".lapetus")
+            home.join("AppData").join("Roaming").join(".trapgaint")
         }
     };
 
     #[cfg(target_os = "linux")]
-    let lapetus_dir = home.join(".lapetus");
+    let trapgaint_dir = home.join(".trapgaint");
 
-    fs::create_dir_all(&lapetus_dir).ok();
-    lapetus_dir.join("lapetus_accounts.json")
+    fs::create_dir_all(&trapgaint_dir).ok();
+    trapgaint_dir.join("trapgaint_accounts.json")
 }
 
 pub fn load_auth_state() -> AuthState {

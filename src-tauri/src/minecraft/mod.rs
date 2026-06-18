@@ -137,7 +137,7 @@ impl MinecraftLauncher {
     pub fn new() -> Result<Self, String> {
         let game_dir = Self::get_minecraft_dir()?;
 
-        // Migrate existing Lapetus installations from .minecraft to .lapetus
+        // Migrate existing Lapetus installations from .minecraft to .trapgaint
         Self::migrate_from_minecraft(&game_dir)?;
 
         let versions_dir = game_dir.join("versions");
@@ -874,7 +874,7 @@ impl MinecraftLauncher {
         }
     }
 
-    /// Migrate existing Lapetus installations from .minecraft to .lapetus
+    /// Migrate existing Lapetus installations from .minecraft to .trapgaint
     fn migrate_from_minecraft(lapetus_dir: &PathBuf) -> Result<(), String> {
         let home = dirs::home_dir().ok_or("Could not find home directory")?;
 
@@ -930,7 +930,7 @@ impl MinecraftLauncher {
 
         // Only migrate if old has lapetus but new doesn't
         if has_lapetus_in_old && !has_lapetus_in_new {
-            println!("[Migration] Found existing Lapetus installation in .minecraft, migrating to .lapetus...");
+            println!("[Migration] Found existing Lapetus installation in .minecraft, migrating to .trapgaint...");
 
             // Create directories
             std::fs::create_dir_all(&new_versions_dir).ok();
@@ -1027,24 +1027,24 @@ impl MinecraftLauncher {
 
         println!("[DEBUG] Home directory: {:?}", home);
 
-        // Use .lapetus directory instead of .minecraft to avoid conflicts with other launchers
+        // Use .trapgaint directory instead of .minecraft to avoid conflicts with other launchers
         #[cfg(target_os = "macos")]
-        let minecraft_dir = home.join("Library/Application Support/lapetus");
+        let minecraft_dir = home.join("Library/Application Support/trapgaint");
 
         #[cfg(target_os = "windows")]
         let minecraft_dir = {
             // On Windows, use APPDATA environment variable for reliability
             if let Ok(appdata) = std::env::var("APPDATA") {
-                PathBuf::from(appdata).join(".lapetus")
+                PathBuf::from(appdata).join(".trapgaint")
             } else {
-                home.join("AppData").join("Roaming").join(".lapetus")
+                home.join("AppData").join("Roaming").join(".trapgaint")
             }
         };
 
         #[cfg(target_os = "linux")]
-        let minecraft_dir = home.join(".lapetus");
+        let minecraft_dir = home.join(".trapgaint");
 
-        println!("[DEBUG] Lapetus directory: {:?}", minecraft_dir);
+        println!("[DEBUG] TrapGaint directory: {:?}", minecraft_dir);
 
         std::fs::create_dir_all(&minecraft_dir).map_err(|e| e.to_string())?;
         Ok(minecraft_dir)
@@ -3634,7 +3634,7 @@ impl MinecraftLauncher {
 
             // Check for mod updates from GitHub (version.txt)
             let mut needs_update = false;
-            let update_check_file = mods_dir.join(".lapetus-version-check-at");
+            let update_check_file = mods_dir.join(".trapgaint-version-check-at");
             let now_unix = std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .map(|duration| duration.as_secs())
@@ -3663,7 +3663,7 @@ impl MinecraftLauncher {
                                 let remote_version = remote_version.trim();
 
                                 // Check local version
-                                let version_file = mods_dir.join(".lapetus-version");
+                                let version_file = mods_dir.join(".trapgaint-version");
                                 let local_version = std::fs::read_to_string(&version_file)
                                     .unwrap_or_default()
                                     .trim()
