@@ -6465,6 +6465,7 @@ fn main() {
             .inner_size(760.0, 420.0)
             .resizable(false)
             .decorations(false)
+            .visible(false)
             .center()
             .always_on_top(true)
             .skip_taskbar(true)

@@ -73,14 +73,14 @@ export default function StartupUpdate({ onComplete }: StartupUpdateProps) {
 
   // Keep the startup splash visible for a minimum time.
   useEffect(() => {
-    // Always show for at least 2.5 seconds
+    // We no longer wait here because the new cinematic splash screen handles startup timing
     const timer = setTimeout(() => {
       setMinimumDisplayDone(true);
-      setStartupReady(true); // Also set ready after minimum time
-    }, 2500);
-    
+      setStartupReady(true); 
+    }, 0);
+
     checkAndUpdate();
-    
+
     return () => {
       clearTimeout(timer);
     };
@@ -118,7 +118,8 @@ export default function StartupUpdate({ onComplete }: StartupUpdateProps) {
       
       if (!session) {
         await restoreMainWindowSize();
-        await finishStartupSplash();
+        // The cinematic splash screen (startup-splash.tsx) handles closing itself.
+        // await finishStartupSplash();
         onComplete();
         return;
       }
@@ -140,12 +141,14 @@ export default function StartupUpdate({ onComplete }: StartupUpdateProps) {
       }
 
       await restoreMainWindowSize();
-      await finishStartupSplash();
+      // The cinematic splash screen (startup-splash.tsx) handles closing itself.
+      // await finishStartupSplash();
       onComplete();
     } catch (error) {
       console.error('[StartupUpdate] Session check failed:', error);
       await restoreMainWindowSize();
-      await finishStartupSplash();
+      // The cinematic splash screen (startup-splash.tsx) handles closing itself.
+      // await finishStartupSplash();
       onComplete();
     }
   };
@@ -297,69 +300,7 @@ export default function StartupUpdate({ onComplete }: StartupUpdateProps) {
   return (
     <AnimatePresence mode="wait">
       {/* App startup splash - Apple-like animation with trapcode logo on car2 background */}
-      {bootState === 'startup-animation' && (
-        <div className="fixed inset-0 flex h-screen w-screen items-center justify-center overflow-hidden">
-          {/* Background image */}
-          <div 
-            className="absolute inset-0 bg-cover bg-center"
-            style={{ backgroundImage: 'url(/car2.jpg)' }}
-          />
-          
-          {/* Dark overlay for better logo visibility */}
-          <div className="absolute inset-0 bg-black/40" />
-
-          {/* Center logo with Apple-like pop-in animation */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.3 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ 
-              duration: 0.8, 
-              ease: [0.34, 1.56, 0.64, 1], // Cubic bezier for bounce effect
-              delay: 0.2
-            }}
-            className="relative z-10"
-          >
-            <motion.img
-              src={trapcodeLogo}
-              alt="TrapCode"
-              className="w-[280px] h-[280px] sm:w-[320px] sm:h-[320px] md:w-[360px] md:h-[360px] object-contain"
-              animate={{ 
-                filter: [
-                  'drop-shadow(0 0 40px rgba(255,255,255,0.3))',
-                  'drop-shadow(0 0 60px rgba(255,255,255,0.5))',
-                  'drop-shadow(0 0 40px rgba(255,255,255,0.3))'
-                ]
-              }}
-              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-            />
-          </motion.div>
-
-          {/* Loading status at bottom */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.6, ease: [0.16, 1, 0.3, 1] }}
-            className="absolute bottom-16 flex flex-col items-center gap-4 z-10"
-          >
-            {/* Simple spinner */}
-            <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            
-            <AnimatePresence mode="wait">
-              <motion.p
-                key={statusText}
-                initial={{ opacity: 0, y: 5 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -5 }}
-                transition={{ duration: 0.3 }}
-                className="text-white text-base font-medium tracking-wider drop-shadow-lg"
-                style={{ fontFamily: "'Bebas Neue', sans-serif" }}
-              >
-                {statusText}
-              </motion.p>
-            </AnimatePresence>
-          </motion.div>
-        </div>
-      )}
+      {bootState === 'startup-animation' && null}
 
       {/* Update Screen - Only shown when update is being installed */}
       {bootState === 'update' && (
