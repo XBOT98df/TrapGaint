@@ -10,7 +10,15 @@ const StartupSplash = () => {
     let isMounted = true;
 
     const sequence = async () => {
-      // Preload the heavy 3MB image and the trapcode logo so they don't pop in mid-animation
+      // Un-hide the window immediately. React has already rendered the black background!
+      // This MUST happen before image preloading, because hidden webviews suspend network and animations!
+      try {
+        await invoke("show_startup_splash");
+      } catch (error) {
+        console.error("Failed to show window via backend:", error);
+      }
+
+      // Preload images to ensure they are ready before animating
       const preloadImage = (src: string) => {
         return new Promise((resolve) => {
           const img = new Image();
@@ -26,14 +34,6 @@ const StartupSplash = () => {
       ]);
 
       if (!isMounted) return;
-
-      // Un-hide the window ONLY after the dark background is rendered and heavy images are fully loaded.
-      // We use a backend command to ensure it has the correct OS privileges to show the window.
-      try {
-        await invoke("show_startup_splash");
-      } catch (error) {
-        console.error("Failed to show window via backend:", error);
-      }
 
       // 1. Wipe animation (Faster and smoother cinematic ease)
       await wipeControls.start({
