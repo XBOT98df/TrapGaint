@@ -5309,6 +5309,14 @@ async fn close_login_window(_app: tauri::AppHandle) -> Result<(), String> {
 }
 
 #[tauri::command]
+async fn show_startup_splash(app: tauri::AppHandle) -> Result<(), String> {
+    if let Some(splash_window) = app.get_webview_window("startup-splash") {
+        let _ = splash_window.show();
+    }
+    Ok(())
+}
+
+#[tauri::command]
 async fn finish_startup_splash(app: tauri::AppHandle) -> Result<(), String> {
     if let Some(splash_window) = app.get_webview_window("startup-splash") {
         let _ = splash_window.close();
@@ -6596,6 +6604,7 @@ fn main() {
             start_ms_login,
             check_login_redirect,
             close_login_window,
+            show_startup_splash,
             finish_startup_splash,
             complete_ms_login,
             create_offline_account,

@@ -2,7 +2,6 @@ import React, { useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import { motion, useAnimation } from "framer-motion";
 import { invoke } from "@tauri-apps/api/core";
-import { getCurrentWindow } from "@tauri-apps/api/window";
 
 const StartupSplash = () => {
   const wipeControls = useAnimation();
@@ -29,11 +28,11 @@ const StartupSplash = () => {
       if (!isMounted) return;
 
       // Un-hide the window ONLY after the dark background is rendered and heavy images are fully loaded.
-      // This completely guarantees absolutely ZERO white flashes at startup!
+      // We use a backend command to ensure it has the correct OS privileges to show the window.
       try {
-        await getCurrentWindow().show();
+        await invoke("show_startup_splash");
       } catch (error) {
-        console.error("Failed to show window:", error);
+        console.error("Failed to show window via backend:", error);
       }
 
       // 1. Wipe animation (Faster and smoother cinematic ease)
