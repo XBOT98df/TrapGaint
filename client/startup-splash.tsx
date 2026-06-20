@@ -10,13 +10,7 @@ const StartupSplash = () => {
     let isMounted = true;
 
     const sequence = async () => {
-      // Un-hide the window immediately. React has already rendered the black background!
-      // This MUST happen before image preloading, because hidden webviews suspend network and animations!
-      try {
-        await invoke("show_startup_splash");
-      } catch (error) {
-        console.error("Failed to show window via backend:", error);
-      }
+      // Window is now natively visible on boot to match 1.0.9 behavior.
 
       // Preload images to ensure they are ready before animating
       const preloadImage = (src: string) => {
