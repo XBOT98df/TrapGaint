@@ -5306,6 +5306,8 @@ async fn check_login_redirect(_app: tauri::AppHandle) -> Result<Option<String>, 
 async fn close_login_window(_app: tauri::AppHandle) -> Result<(), String> {
     // Not used anymore
     Ok(())
+}
+
 #[tauri::command]
 async fn finish_startup_splash(app: tauri::AppHandle) -> Result<(), String> {
     if let Some(splash_window) = app.get_webview_window("startup-splash") {
