@@ -6118,13 +6118,42 @@ async fn perform_app_update(app: tauri::AppHandle, _window: tauri::Window) -> Re
         .map_err(|e| format!("Failed to download/install: {}", e))?;
 
     println!("[Updater] Update installed successfully!");
-    println!("[Updater] Restarting application in 2 seconds...");
 
-    // Give a small delay to ensure update is fully applied
-    std::thread::sleep(std::time::Duration::from_secs(2));
-
-    println!("[Updater] Restarting now...");
-    app.restart();
+    // ── Clean restart sequence ───────────────────────────────────────
+    // The Tauri updater downloads the new installer and runs it. On
+    // Windows, the NSIS installer overwrites the binary in-place, so we
+    // must:
+    //   1. Close all Tauri windows (releases file locks the installer
+    //      needs to replace).
+    //   2. Exit the current process so the installer can finish writing.
+    //   3. The installer's NSIS `Quit` instruction will relaunch the new
+    //      binary automatically (the NSIS template we ship calls
+    //      `execShell "open" "TrapGaint.exe"` on success), so we must
+    //      NOT call `app.restart()` here — that would race with the
+    //      installer and leave a stale process running.
+    //
+    // If we *did* call `app.restart()` from the still-running old
+    // process, Windows would launch the new binary while the old
+    // process was still alive (the installer had only just begun
+    // replacing files), and users would end up with two TrapGaint
+    // entries in Task Manager — and on next start, two install
+    // directories under %LOCALAPPDATA%\Programs\.
+    //
+    // The `installMode: "passive"` setting in tauri.conf.json makes the
+    // NSIS installer run silently and relaunch the new app on its
+    // own, so we just need to get out of the way.
+    println!("[Updater] Closing windows and exiting so the installer can finish...");
+    app.exit(0);
+    // Belt-and-braces: if `app.exit` doesn't terminate the process
+    // within a second (e.g. some platform event loop is still
+    // pumping), force it.
+    std::thread::spawn(|| {
+        std::thread::sleep(std::time::Duration::from_secs(2));
+        std::process::exit(0);
+    });
+    // Give the exit/spawn a moment to take effect.
+    std::thread::sleep(std::time::Duration::from_millis(500));
+    Ok(())
 }
 
 // Discord Rich Presence command

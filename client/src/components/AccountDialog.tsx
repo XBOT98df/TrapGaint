@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { LogOut, FolderOpen } from "lucide-react";
 import { launcher, type AuthAccount } from "@/lib/launcher";
 import { formatPlaytimeTotal, getWeeklyPlaytimeStats } from "@/lib/playtimeTracker";
-import dragonLogo from "@assets/NewIcons.svg";
+import dragonLogo from "@assets/generated_images/new-dragon.png";
 
 interface AccountDialogProps {
   open: boolean;

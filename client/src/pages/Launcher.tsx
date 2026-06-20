@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { SkinViewer } from "@/components/SkinViewer";
 import { SkinGallery } from "@/components/SkinGallery";
 import { CapeViewer } from "@/components/CapeViewer";
+import DynamicInfo from "@/components/ui/dynamic-info";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -35,6 +36,7 @@ import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { launcher, type AuthAccount } from "@/lib/launcher";
+import { SpiralGallery } from "@/components/SpiralGallery";
 import { sessionTracker } from "@/lib/sessionTracker";
 import type { VoiceCall, CallState } from "@/lib/voiceChat";
 import type { Achievement } from "@/lib/achievements";
@@ -100,8 +102,8 @@ import vanillaLogo from "@assets/generated_images/vanilla.png";
 import forgeLogo from "@assets/generated_images/forge.png";
 import fabricLogo from "@assets/generated_images/fabric.png";
 import quiltLogo from "@assets/generated_images/quilt.png";
-import dragonLogo from "@assets/NewIcons.svg";
-import dragonTitle from "@assets/NewIcons.svg";
+import dragonLogo from "@assets/generated_images/new-dragon.png";
+import dragonTitle from "@assets/generated_images/new-dragon.png";
 import clientsideImg from "@assets/generated_images/clientside.jpg";
 import img121 from "@assets/generated_images/1.21.png";
 import img261Snapshot from "@assets/generated_images/26.1.jpg";
@@ -119,7 +121,7 @@ import serverHostingIcon from "@assets/prism.svg";
 import newsIcon from "@assets/icons/cube.svg";
 import friendsIcon from "@assets/icons/c7.svg";
 import settingsIcon from "@assets/roll.svg";
-import starIcon from "@assets/NewIcons.svg";
+import starIcon from "@assets/generated_images/new-dragon.png";
 import img116 from "@assets/generated_images/1.16.jpg";
 import img115 from "@assets/generated_images/1.15.jpeg";
 import img114 from "@assets/generated_images/1.14.jpg";
@@ -312,7 +314,7 @@ const VERSION_CATEGORIES: VersionCategory[] = [
   { id: "1.8", name: "1.8", image: img18, versions: [] },
 ];
 
-type TabType = "home" | "versions" | "mods" | "servers" | "friends" | "news" | "store" | "hosting";
+type TabType = "home" | "versions" | "mods" | "servers" | "friends" | "news" | "store" | "hosting" | "partner";
 type LoaderType = "vanilla" | "forge" | "fabric" | "quilt" | "dragon" | "misc" | "modpacks" | "lapetus" | "bedrock";
 type DragonModSource = "github" | "local";
 
@@ -1243,7 +1245,7 @@ export default function Launcher() {
         return;
       }
 
-      const greeting = `Greetings! Welcome back, ${activeAccount.username}.`;
+      const greeting = `Welcome back, player.`;
       const played = await speakEvent('welcome', greeting, 0);
       if (played) {
         cleanupListeners();
@@ -1277,6 +1279,9 @@ export default function Launcher() {
     try {
       const updatedAccount = await launcher.updateAccountSkin(activeAccount.uuid, skinUsername);
       setActiveAccount((prev) => (prev && prev.uuid === updatedAccount.uuid ? updatedAccount : prev));
+      // Notify other components (e.g. DynamicInfo) that the skin changed
+      // so they can refresh their mc-heads.net avatar in real time.
+      window.dispatchEvent(new CustomEvent("accountUpdated", { detail: { skinUsername } }));
     } catch (error) {
       console.error('Failed to sync skin selection:', error);
     }
@@ -1631,6 +1636,12 @@ export default function Launcher() {
   }>>([]);
   const [isSearchingMods, setIsSearchingMods] = useState(false);
   const [isDownloadingMod, setIsDownloadingMod] = useState<string | null>(null);
+  // Mods that finished installing but haven't been picked up by the next loadAllMods
+  // call yet. Used to flip the "Install" button to "Installed" instantly instead of
+  // waiting for the (slow) directory re-scan to complete. Cleared on every loadAllMods.
+  const [optimisticInstalledModIds, setOptimisticInstalledModIds] = useState<Set<string>>(
+    () => new Set<string>()
+  );
   const [forceRender, setForceRender] = useState(0);
   const [modGameVersion, setModGameVersion] = useState("");
   const [selectedMod, setSelectedMod] = useState<{
@@ -3302,7 +3313,7 @@ export default function Launcher() {
                   if (Notification.permission === 'granted') {
                     new Notification(notif.title || "Hey what's up! 👋", {
                       body: notif.message || `${notif.sender_username} is calling you to play in Resonance!`,
-                      icon: '/NewIcons.svg'
+                      icon: '/new-dragon.png'
                     });
                   } else if (Notification.permission !== 'denied') {
                     Notification.requestPermission();
@@ -3420,6 +3431,10 @@ export default function Launcher() {
 
       console.log('[Mods] Loaded mods:', mods.map(m => ({ name: m.name, mod_id: m.mod_id, icon_path: m.icon_path })));
       console.log('[Mods] Showing all mods in manager:', mods.length);
+
+      // Source of truth (allMods) is now refreshed — clear the optimistic set so
+      // future isInstalled checks come from the fresh data only.
+      setOptimisticInstalledModIds(new Set());
 
       // Convert icon paths to asset URLs using Tauri's convertFileSrc
       const modsWithIcons = mods.map((mod) => {
@@ -6825,7 +6840,24 @@ export default function Launcher() {
     if (failedMods.length > 0) {
       console.warn(`[Mod Install] Some dependencies failed: ${failedMods.join(', ')}`);
     }
-    
+
+    // Flip the "Install" button to "Installed" instantly for the main mod and every
+    // dependency that landed. Without this, the user briefly sees the button reset
+    // to "Install" for the few seconds loadAllMods takes to walk the mods directory.
+    setOptimisticInstalledModIds(prev => {
+      const next = new Set(prev);
+      next.add(mod.project_id);
+      for (const dep of installQueue) {
+        try {
+          const parsed = JSON.parse(dep);
+          if (parsed?.project_id) next.add(parsed.project_id);
+        } catch {
+          // ignore malformed queue entries
+        }
+      }
+      return next;
+    });
+
     // Refresh mod list for the exact target profile so UI and toggles are immediately correct.
     await loadAllMods(resolvedTargetVersion);
   };
@@ -6849,6 +6881,7 @@ export default function Launcher() {
     { id: "versions" as const, icon: versionIcon, label: "Versions", isSvg: true },
     { id: "servers" as const, icon: nametagIcon, label: "Misc Store", isSvg: true },
     { id: "news" as const, icon: newsIcon, label: "Skins", isSvg: true },
+    { id: "partner" as const, icon: "/patner.png", label: "Partner", isSvg: false },
   ], []);
 
   const triggerLaunchButtonFill = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
@@ -6867,6 +6900,35 @@ export default function Launcher() {
     }, 760);
   }, []);
 
+
+  // Partner Tab
+  const renderPartner = () => {
+    // Use local assets to prevent Drei Image Loader from throwing network/CORS Suspense errors
+    const localImages = [
+      '/home-banner.jpg',
+      '/misc.jpg',
+      '/patrne.png',
+      '/wallpaper_minecraft_buzzybees_2560x1440.png',
+      '/wallpaper_minecraft_caves_cliffs_part1_2560x1440.png',
+      '/wallpaper_minecraft_nether_update_2560x1440.png',
+      '/wallpaper_minecraft_ocean_monument_2560x1440.png',
+      '/wallpaper_minecraft_update_aquatic_2560x1440.png',
+      '/wallpaper_minecraft_wild_update_2560x1440.png',
+      '/servers-4k.png',
+      '/launch.jpg',
+      '/spalsh.jpg'
+    ];
+    
+    // Duplicate them to fill the 16 slots if needed, or just use these 12
+    const spiralImages = [...localImages, ...localImages.slice(0, 4)];
+
+    return (
+      <div className="flex-1 flex flex-col relative overflow-hidden bg-[#09090b]">
+        {/* The Spiral Gallery */}
+        <SpiralGallery images={spiralImages} />
+      </div>
+    );
+  };
 
   // Premium Home Tab - Zimoxy Style
   const renderHome = () => {
@@ -7295,7 +7357,7 @@ export default function Launcher() {
                       onClick={async () => {
                         // Open panel immediately for instant response
                         setShowInstallMods(true);
-                        
+
                         // Reset search state
                         setModBrowserSearchQuery("");
                         setModBrowserPage(1);
@@ -7417,46 +7479,48 @@ export default function Launcher() {
                           >
                           {visibleModBrowserItems.map((mod) => {
                             // Check if mod is already installed with improved matching
-                            const isInstalled = allMods.some((installedMod: any) => {
-                              const installedModId = normalizeModIdentity(installedMod.mod_id);
-                              const installedFileName = normalizeModIdentity(cleanModFileName(installedMod.name));
-                              const installedDisplayName = normalizeModIdentity(installedMod.display_name);
+                            const isInstalled =
+                              optimisticInstalledModIds.has(mod.project_id) ||
+                              allMods.some((installedMod: any) => {
+                                const installedModId = normalizeModIdentity(installedMod.mod_id);
+                                const installedFileName = normalizeModIdentity(cleanModFileName(installedMod.name));
+                                const installedDisplayName = normalizeModIdentity(installedMod.display_name);
 
-                              const projectId = normalizeModIdentity(mod.project_id);
-                              const modSlug = normalizeModIdentity(mod.slug);
-                              const modTitle = normalizeModIdentity(mod.title);
+                                const projectId = normalizeModIdentity(mod.project_id);
+                                const modSlug = normalizeModIdentity(mod.slug);
+                                const modTitle = normalizeModIdentity(mod.title);
 
-                              // Exact mod_id match (most reliable)
-                              if (installedModId && (installedModId === projectId || installedModId === modSlug)) {
-                                return true;
-                              }
+                                // Exact mod_id match (most reliable)
+                                if (installedModId && (installedModId === projectId || installedModId === modSlug)) {
+                                  return true;
+                                }
 
-                              // Check filename against normalized slug/project/title
-                              if (
-                                installedFileName &&
-                                (
-                                  (modSlug && installedFileName.includes(modSlug)) ||
-                                  (projectId && installedFileName.includes(projectId)) ||
-                                  (modTitle && installedFileName.includes(modTitle))
-                                )
-                              ) {
-                                return true;
-                              }
+                                // Check filename against normalized slug/project/title
+                                if (
+                                  installedFileName &&
+                                  (
+                                    (modSlug && installedFileName.includes(modSlug)) ||
+                                    (projectId && installedFileName.includes(projectId)) ||
+                                    (modTitle && installedFileName.includes(modTitle))
+                                  )
+                                ) {
+                                  return true;
+                                }
 
-                              // Check display metadata fallback
-                              if (
-                                installedDisplayName &&
-                                (
-                                  (modTitle && installedDisplayName === modTitle) ||
-                                  (modSlug && installedDisplayName === modSlug) ||
-                                  (projectId && installedDisplayName === projectId)
-                                )
-                              ) {
-                                return true;
-                              }
-                              
-                              return false;
-                            });
+                                // Check display metadata fallback
+                                if (
+                                  installedDisplayName &&
+                                  (
+                                    (modTitle && installedDisplayName === modTitle) ||
+                                    (modSlug && installedDisplayName === modSlug) ||
+                                    (projectId && installedDisplayName === projectId)
+                                  )
+                                ) {
+                                  return true;
+                                }
+
+                                return false;
+                              });
 
                             return (
                               <FollowerPointerCard
@@ -10345,7 +10409,24 @@ export default function Launcher() {
         </div>
       )}
       
-      <div className="flex flex-col h-screen bg-black overflow-hidden">
+      <div className="flex flex-col h-screen bg-black overflow-hidden relative">
+        {/* Personal info chip — absolutely anchored to the very top of the screen */}
+        <div
+          className={`absolute left-1/2 -translate-x-1/2 z-[130] transition-opacity duration-300 ${isInstalling ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+          style={{ top: 0 }}
+        >
+          <DynamicInfo
+            image={
+              activeAccount?.is_offline
+                ? `https://mc-heads.net/head/${activeAccount.skin_username || activeAccount.username}/48`
+                : activeAccount?.skin_url || (activeAccount?.uuid ? `https://mc-heads.net/head/${activeAccount.uuid}/48` : undefined)
+            }
+            name={activeAccount?.username || "kelpie"}
+            info={activeAccount?.is_offline ? "Offline" : "Member"}
+            status={activeAccount?.is_offline ? "offline" : "online"}
+          />
+        </div>
+
         {/* Draggable Title Bar */}
         <div
           className={`h-8 bg-black border-b border-zinc-950 flex-shrink-0 flex items-center justify-between px-4 relative z-[120] transition-opacity duration-300 ${isInstalling ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
@@ -10358,7 +10439,7 @@ export default function Launcher() {
 
         {/* Top Bar with Zimoxy-style Loader Tabs */}
         <div className={`bg-black border-b border-zinc-950 px-3 relative z-[110] transition-opacity duration-300 ${isInstalling ? 'opacity-0 pointer-events-none' : 'opacity-100'}`} style={{ paddingLeft: '80px' }}>
-          
+
           <div className="flex items-center gap-0 relative">
             {/* Loader Tabs */}
             {(["vanilla", "forge", "fabric", "quilt"] as LoaderType[]).map((loader, index) => {
@@ -10404,9 +10485,6 @@ export default function Launcher() {
                 </Tooltip>
               );
             })}
-
-            {/* Spacer */}
-            <div className="flex-1" />
 
             {/* Spacer */}
             <div className="flex-1" />
@@ -10458,14 +10536,14 @@ export default function Launcher() {
                           </motion.div>
                         )}
                         {tab.isSvg ? (
-                          <img 
-                            src={tab.icon} 
+                          <img
+                            src={tab.icon}
                             alt={tab.label}
                             className={`${tab.id === 'servers' || tab.id === 'news' ? 'w-10 h-10' : 'w-9 h-9'} transition-all duration-300 ${isActive ? 'brightness-100' : 'grayscale opacity-50'}`}
                           />
                         ) : (
-                          <img 
-                            src={tab.icon as string} 
+                          <img
+                            src={tab.icon as string}
                             alt={tab.label}
                             className={`w-9 h-9 transition-all duration-300 ${isActive ? '' : 'grayscale opacity-50'}`}
                           />
@@ -10511,6 +10589,7 @@ export default function Launcher() {
               {activeTab === "home" && renderHome()}
               {activeTab === "versions" && renderVersions()}
               {activeTab === "hosting" && <ServerHosting />}
+              {activeTab === "partner" && renderPartner()}
               {activeTab === "friends" && (
                 <div 
                   className="flex-1 relative overflow-hidden"
@@ -10763,6 +10842,7 @@ export default function Launcher() {
                 {activeTab === "home" && renderHome()}
                 {activeTab === "versions" && renderVersions()}
                 {activeTab === "hosting" && <ServerHosting />}
+                {activeTab === "partner" && renderPartner()}
                 {activeTab === "friends" && renderFriends()}
                 {activeTab === "servers" && (
                   <div 

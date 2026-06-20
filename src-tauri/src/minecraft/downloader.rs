@@ -1,4 +1,5 @@
 use futures_util::StreamExt;
+use sha1::{Digest, Sha1};
 use std::io::Write;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -250,6 +251,29 @@ where
     (downloaded, failed_count)
 }
 
+/// Verify a file's SHA1 hash matches the expected hex string.
+/// Returns true if the file exists, is non-empty, and its hash matches.
+/// Returns false if the file is missing, empty, or has a different hash.
+pub fn file_hash_matches(path: &PathBuf, expected_sha1_hex: &str) -> bool {
+    match std::fs::File::open(path) {
+        Ok(mut file) => {
+            // Fast path: zero-byte files are always invalid (interrupted download stub).
+            if let Ok(metadata) = file.metadata() {
+                if metadata.len() == 0 {
+                    return false;
+                }
+            }
+            let mut hasher = Sha1::new();
+            if std::io::copy(&mut file, &mut hasher).is_err() {
+                return false;
+            }
+            let actual = format!("{:x}", hasher.finalize());
+            actual.eq_ignore_ascii_case(expected_sha1_hex)
+        }
+        Err(_) => false,
+    }
+}
+
 /// Download assets in parallel (optimized for many small files)
 pub async fn download_assets_parallel<F>(
     objects: &serde_json::Map<String, serde_json::Value>,
@@ -269,17 +293,29 @@ where
             let asset_dir = objects_dir.join(prefix);
             let asset_path = asset_dir.join(hash);
 
-            if !asset_path.exists() {
-                let url = format!(
-                    "https://resources.download.minecraft.net/{}/{}",
-                    prefix, hash
-                );
-                tasks.push(DownloadTask {
-                    url,
-                    path: asset_path,
-                    fallback_urls: vec![],
-                });
+            // Only skip the download if the file already exists AND its SHA1 matches
+            // the expected hash. An interrupted download (common on Windows due to
+            // antivirus interference, network blips, or process kill) leaves a stub
+            // file that the launcher previously treated as "done", causing
+            // missing/corrupt textures on the home screen.
+            if asset_path.exists() && file_hash_matches(&asset_path, hash) {
+                continue;
             }
+
+            // Stale/empty/corrupt file: remove it so the downloader starts clean.
+            if asset_path.exists() {
+                let _ = std::fs::remove_file(&asset_path);
+            }
+
+            let url = format!(
+                "https://resources.download.minecraft.net/{}/{}",
+                prefix, hash
+            );
+            tasks.push(DownloadTask {
+                url,
+                path: asset_path,
+                fallback_urls: vec![],
+            });
         }
     }
 

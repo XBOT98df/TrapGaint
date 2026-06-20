@@ -557,3 +557,20 @@ h1, h2, h3, h4, h5, h6,
   backface-visibility: hidden;
   will-change: transform, opacity;
 }
+
+/* DynamicInfo animated background — slow hue/brightness shift so the
+   white surface feels alive without being noisy. */
+@keyframes dynamicInfoShift {
+  0% {
+    background-position: 0% 50%;
+    filter: hue-rotate(0deg) brightness(1);
+  }
+  50% {
+    background-position: 100% 50%;
+    filter: hue-rotate(8deg) brightness(1.02);
+  }
+  100% {
+    background-position: 0% 50%;
+    filter: hue-rotate(0deg) brightness(1);
+  }
+}

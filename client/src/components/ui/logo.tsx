@@ -1,4 +1,4 @@
-import dragonLogo from "@assets/NewIcons.svg";
+import dragonLogo from "@assets/generated_images/new-dragon.png";
 
 interface LogoProps {
   size?: "sm" | "md" | "lg" | "xl";

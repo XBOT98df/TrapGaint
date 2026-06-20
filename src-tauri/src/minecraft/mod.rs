@@ -8954,7 +8954,15 @@ impl MinecraftLauncher {
                                     let prefix = &hash[..2];
                                     let asset_path = objects_dir.join(prefix).join(hash);
 
-                                    if !asset_path.exists() {
+                                    // Treat as missing if the file does not exist OR if its
+                                    // contents do not match the expected SHA1 (corrupt/partial
+                                    // file from a previous interrupted install).
+                                    let is_valid = asset_path.exists()
+                                        && downloader::file_hash_matches(&asset_path, hash);
+                                    if !is_valid {
+                                        if asset_path.exists() {
+                                            let _ = std::fs::remove_file(&asset_path);
+                                        }
                                         missing.push(hash.to_string());
                                     }
                                 }

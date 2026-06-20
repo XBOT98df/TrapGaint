@@ -122,7 +122,7 @@ export function RepairDialog({
         {/* Floating Logo - positioned above dialog */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 z-10">
           <img 
-            src="/NewIcons.svg" 
+            src="/new-dragon.png"
             alt="Resonance" 
             className="w-[120px] h-[120px] object-contain rounded-2xl drop-shadow-[0_4px_20px_rgba(0,0,0,0.5)]"
           />

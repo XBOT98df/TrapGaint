@@ -268,13 +268,13 @@ export const SkinGallery: React.FC<SkinGalleryProps> = ({
                 await (window as any).handleApplySkin(skin);
               }
             }}
-            className={`bg-zinc-900 rounded-lg p-4 cursor-pointer transition-all hover:bg-zinc-800 relative ${
-              selectedSkinId === skin.id ? 'ring-2 ring-white' : 'ring-2 ring-transparent'
+            className={`bg-zinc-900 rounded-lg p-4 cursor-pointer transition-all hover:bg-zinc-800 relative outline outline-[6px] ${
+              selectedSkinId === skin.id ? 'outline-white' : 'outline-transparent'
             }`}
           >
-            {/* White border overlay when selected - only on edges, not covering content */}
+            {/* White border overlay when selected - full-length on all four sides */}
             {selectedSkinId === skin.id && (
-              <div className="absolute inset-0 rounded-lg pointer-events-none border-4 border-white" />
+              <div className="absolute inset-0 rounded-lg pointer-events-none border-[6px] border-white" />
             )}
             
             {/* Skin Preview */}

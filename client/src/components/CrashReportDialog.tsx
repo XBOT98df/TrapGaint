@@ -75,7 +75,7 @@ export function CrashReportDialog({ isOpen, onClose, versionId, username, uuid }
               {/* Logo */}
               <div className="flex justify-center mb-5">
                 <img 
-                  src="/NewIcons.svg" 
+                  src="/new-dragon.png"
                   alt="Resonance" 
                   className="w-[72px] h-[72px] rounded-2xl"
                 />
@@ -130,7 +130,7 @@ export function CrashReportDialog({ isOpen, onClose, versionId, username, uuid }
                 {/* Sender Logo */}
                 <div className="w-16 h-16 rounded-2xl overflow-hidden flex-shrink-0">
                   <img 
-                    src="/NewIcons.svg" 
+                    src="/new-dragon.png"
                     alt="Resonance" 
                     className="w-full h-full"
                   />

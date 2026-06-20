@@ -103,31 +103,55 @@ interface DynamicIslandProps {
   username?: string;
 }
 
+// Build a real-time mc-heads.net head URL with a cache-busting
+// revision so skin swaps always show the new head immediately.
+function mcHeadUrl(name: string, revision: number, size = 64): string {
+  const base = `https://mc-heads.net/avatar/${encodeURIComponent(name)}/${size}`;
+  return `${base}?v=${revision}`;
+}
+
 export default function DynamicIsland({ states, onDismiss, lastLaunched, username }: DynamicIslandProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [isClicked, setIsClicked] = useState(false);
   const currentState = states[0];
-  
+
+  // Bump when the skin changes (via the accountUpdated event or storage
+  // changes) so the <img> re-mounts and the mc-heads.net URL gets a
+  // fresh cache-busting query — the head updates in real time.
+  const [skinRevision, setSkinRevision] = useState(0);
+  useEffect(() => {
+    const bump = () => setSkinRevision((r) => r + 1);
+    window.addEventListener("accountUpdated", bump);
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === "dragon_current_account") bump();
+    };
+    window.addEventListener("storage", handleStorage);
+    return () => {
+      window.removeEventListener("accountUpdated", bump);
+      window.removeEventListener("storage", handleStorage);
+    };
+  }, []);
+
   // Weather and date state
   const [temperature, setTemperature] = useState<number | null>(null);
   const [weatherCondition, setWeatherCondition] = useState<string>('');
   const [currentDate, setCurrentDate] = useState<string>('');
   const [currentTime, setCurrentTime] = useState<string>('');
-  
+
   // Fetch weather data
   useEffect(() => {
     const fetchWeather = async () => {
       try {
         const geoResponse = await fetch('https://ipapi.co/json/');
         const geoData = await geoResponse.json();
-        
+
         const weatherResponse = await fetch(
           `https://api.open-meteo.com/v1/forecast?latitude=${geoData.latitude}&longitude=${geoData.longitude}&current=temperature_2m,weather_code&temperature_unit=fahrenheit`
         );
         const weatherData = await weatherResponse.json();
-        
+
         setTemperature(Math.round(weatherData.current.temperature_2m));
-        
+
         const weatherCode = weatherData.current.weather_code;
         if (weatherCode === 0) setWeatherCondition('clear');
         else if (weatherCode <= 3) setWeatherCondition('cloudy');
@@ -139,7 +163,7 @@ export default function DynamicIsland({ states, onDismiss, lastLaunched, usernam
         setWeatherCondition('clear');
       }
     };
-    
+
     fetchWeather();
     const interval = setInterval(fetchWeather, 30 * 60 * 1000);
     return () => clearInterval(interval);
@@ -258,17 +282,22 @@ export default function DynamicIsland({ states, onDismiss, lastLaunched, usernam
             exit={{ opacity: 0 }}
             className="absolute inset-0 flex items-center justify-between px-3"
           >
-            {lastLaunched ? (
+            {/* Real-time Minecraft player head. Re-keyed on skinRevision
+                so a skin swap re-mounts the image and the cache-busted
+                URL fetches the new head instantly. */}
+            {username ? (
               <motion.div
-                className="flex-shrink-0 w-5 h-5"
+                className="flex-shrink-0 w-7 h-7"
                 initial={{ scale: 0, rotate: -180 }}
                 animate={{ scale: 1, rotate: 0 }}
                 transition={{ type: "spring", stiffness: 300, damping: 20 }}
               >
-                <img 
-                  src={lastLaunched.logo} 
-                  alt={lastLaunched.loader}
-                  className="w-full h-full object-contain"
+                <img
+                  key={`${username}-${skinRevision}`}
+                  src={mcHeadUrl(username, skinRevision, 64)}
+                  alt={`${username}'s head`}
+                  className="w-full h-full object-cover rounded-full"
+                  referrerPolicy="no-referrer"
                 />
               </motion.div>
             ) : (
@@ -279,7 +308,7 @@ export default function DynamicIsland({ states, onDismiss, lastLaunched, usernam
                 transition={{ type: "spring", stiffness: 300 }}
               />
             )}
-            
+
             <motion.div
               className="flex-shrink-0 w-3 h-3 rounded-full border-2 border-black"
               initial={{ scale: 0 }}
