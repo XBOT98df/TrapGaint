@@ -9539,32 +9539,68 @@ export default function Launcher() {
     );
   };
 
-  // Premium placeholder tabs
-  const renderPlaceholder = (title: string, description: string, icon: React.ReactNode, features: string[]) => (
-    <div className="flex-1 flex items-center justify-center p-6">
-      <Card className="max-w-md w-full bg-zinc-900/50 border-zinc-800/50">
-        <CardContent className="p-8 text-center">
-          <div className="w-16 h-16 bg-zinc-800 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-zinc-700/50">
+  // Premium arch gallery to replace "coming soon" panel
+  const renderPlaceholder = (title: string, description: string, icon: React.ReactNode, features: string[]) => {
+    // Images to display in the coverflow
+    const images = [
+      '/wallpaper_minecraft_update_aquatic_2560x1440.png',
+      '/misc.jpg',
+      '/home-banner.jpg',
+      '/patrne.png',
+      '/wallpaper_minecraft_caves_cliffs_part1_2560x1440.png',
+    ];
+
+    return (
+      <div className="flex-1 flex flex-col relative overflow-hidden bg-[#e5e5e5] items-center justify-end h-full">
+        {/* Content Overlay */}
+        <div className="absolute top-16 z-20 flex flex-col items-center text-center px-6 w-full">
+          <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mb-6 shadow-md border border-black/5">
             {icon}
           </div>
-          <h2 className="text-xl font-bold text-white mb-2">{title}</h2>
-          <p className="text-zinc-500 text-sm mb-6">{description}</p>
-          <div className="space-y-2 text-left">
-            {features.map((feature, i) => (
-              <div key={i} className="flex items-center gap-2 text-sm text-zinc-400">
-                <Star className="w-4 h-4 text-yellow-500" />
-                <span>{feature}</span>
-              </div>
-            ))}
-          </div>
-          <Badge className="mt-6 bg-zinc-800 border-zinc-700">
-            <Crown className="w-3 h-3 mr-1" />
-            Coming Soon
-          </Badge>
-        </CardContent>
-      </Card>
-    </div>
-  );
+          <h2 className="text-4xl font-bold text-black mb-3 tracking-tight">{title}</h2>
+          <p className="text-zinc-600 text-lg max-w-lg mb-6">{description}</p>
+        </div>
+
+        {/* The White Arch / Semi-circle */}
+        <div className="absolute -bottom-[65%] w-[150%] aspect-square bg-[#f4f4f5] rounded-[50%] shadow-[0_-10px_40px_rgba(0,0,0,0.05)] z-0" />
+        
+        {/* The Cards */}
+        <div className="absolute bottom-[20%] w-full flex justify-center items-end z-10">
+          {images.map((img, i) => {
+            const total = images.length;
+            const centerIndex = (total - 1) / 2;
+            const offset = i - centerIndex;
+            const angle = offset * 22; // spread angle
+
+            return (
+              <motion.div
+                key={i}
+                className="absolute w-[240px] h-[340px] rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] overflow-hidden bg-white cursor-pointer"
+                style={{
+                  left: '50%',
+                  marginLeft: '-120px',
+                  bottom: '-20px',
+                  transformOrigin: 'center 500px', // Rotation point
+                  zIndex: 20 - Math.abs(offset), // Center card on top
+                }}
+                initial={{ opacity: 0, rotate: angle + 20 }}
+                animate={{ opacity: 1, rotate: angle }}
+                whileHover={{ scale: 1.05, y: -20, zIndex: 50, rotate: angle * 0.8 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+              >
+                <img src={img} className="w-full h-full object-cover" alt="" />
+                
+                {/* Dark overlay for outer cards to give depth */}
+                {Math.abs(offset) > 0 && (
+                  <div className="absolute inset-0 bg-black pointer-events-none transition-opacity duration-300" style={{ opacity: Math.abs(offset) * 0.15 }} />
+                )}
+              </motion.div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
 
   // Get loader icon based on loader type - Helper function for friend activity display
   const getLoaderIcon = (loader: string | null) => {

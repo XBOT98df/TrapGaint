@@ -1,370 +1,260 @@
-import React, { useState, useRef, useMemo, Suspense } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
-import { Html, useTexture } from '@react-three/drei';
-import * as THREE from 'three';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Asterisk, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export interface SpiralGalleryProps {
   images: string[];
 }
 
-function seededRandom(seed: number) {
-  const x = Math.sin(seed) * 10000;
-  return x - Math.floor(x);
-}
-
-const vertexShader = `
-  uniform float bendFactor;
-  uniform float uRadius;
-  uniform vec2 uScale;
-  varying vec2 vUv;
-  void main() {
-    vUv = uv;
-    vec3 pos = position;
-    
-    // Scale local X to world X for mathematically perfect wrapping
-    float worldX = pos.x * uScale.x;
-    
-    float theta = worldX / uRadius;
-    float bentX = sin(theta) * uRadius;
-    float bentZ = cos(theta) * uRadius - uRadius;
-    
-    // Convert back to local X so the mesh scale works, but leave Z unscaled
-    pos.x = mix(worldX, bentX, bendFactor) / uScale.x;
-    pos.z = mix(pos.z, bentZ, bendFactor);
-    
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+const cardsContent = [
+  {
+    title: "Premium Partnership\nwith Pro+",
+    description: "Unlock the full potential of your business. Personalize your experience with advanced features, dedicated support, and priority interactions.",
+    image: "/pro.png"
+  },
+  {
+    title: "Basic Partnership\nwith Go",
+    description: "Start your journey seamlessly. Get essential tools and standard integrations to effectively represent your business and interact with customers.",
+    image: "/go.png"
+  },
+  {
+    title: "Premium Partnership\nwith Pro+",
+    description: "Unlock the full potential of your business. Personalize your experience with advanced features, dedicated support, and priority interactions.",
+    image: "/pro.png"
+  },
+  {
+    title: "Basic Partnership\nwith Go",
+    description: "Start your journey seamlessly. Get essential tools and standard integrations to effectively represent your business and interact with customers.",
+    image: "/go.png"
+  },
+  {
+    title: "Premium Partnership\nwith Pro+",
+    description: "Unlock the full potential of your business. Personalize your experience with advanced features, dedicated support, and priority interactions.",
+    image: "/pro.png"
+  },
+  {
+    title: "Basic Partnership\nwith Go",
+    description: "Start your journey seamlessly. Get essential tools and standard integrations to effectively represent your business and interact with customers.",
+    image: "/go.png"
+  },
+  {
+    title: "Premium Partnership\nwith Pro+",
+    description: "Unlock the full potential of your business. Personalize your experience with advanced features, dedicated support, and priority interactions.",
+    image: "/pro.png"
+  },
+  {
+    title: "Edge Editz X\nTrapGaint",
+    description: "A Professional After Effects Editor\n\nmake movies and series edits within my maximum potential and try to provide y'all my creativity and my skills through my edits.",
+    images: ["/edz.png", "/new-dragon.png"],
+    youtubeLink: "https://www.youtube.com/@edgeeditzae"
   }
-`;
+];
 
-const fragmentShader = `
-  uniform sampler2D map;
-  uniform float opacity;
-  varying vec2 vUv;
-  void main() {
-    vec4 texColor = texture2D(map, vUv);
-    gl_FragColor = vec4(texColor.rgb, texColor.a * opacity);
-  }
-`;
+export const SpiralGallery: React.FC<SpiralGalleryProps> = () => {
+  // Start at a high multiple of total to allow infinite backward scrolling without negative indices
+  const [activeIndex, setActiveIndex] = useState(10000);
+  const total = cardsContent.length;
 
-interface CardData {
-  x: number;
-  y: number;
-  z: number;
-  rotX: number;
-  rotY: number;
-  rotZ: number;
-  scale: number;
-}
+  const handleNext = () => {
+    setActiveIndex((prev) => prev + 1);
+  };
 
-const Card = ({ 
-  url, 
-  index, 
-  total, 
-  viewMode,
-  scatterData,
-  spiralData
-}: { 
-  url: string, 
-  index: number, 
-  total: number, 
-  viewMode: 'scatter' | 'spiral' | 'list',
-  scatterData: CardData,
-  spiralData: CardData
-}) => {
-  const meshRef = useRef<THREE.Mesh>(null);
-  const materialRef = useRef<THREE.ShaderMaterial>(null);
-  const texture = useTexture(url);
-  
-  const targetPos = useMemo(() => new THREE.Vector3(), []);
-  const targetRot = useMemo(() => new THREE.Euler(), []);
-  const targetScale = useMemo(() => new THREE.Vector3(), []);
-  
-  const uniforms = useMemo(() => ({
-    map: { value: texture },
-    bendFactor: { value: viewMode === 'spiral' ? 1.0 : 0.0 },
-    uRadius: { value: 6.0 },
-    uScale: { value: new THREE.Vector2(3, 1.6875) },
-    opacity: { value: 1.0 }
-  }), [texture]);
-  
-  useFrame((state, delta) => {
-    if (!meshRef.current || !materialRef.current) return;
+  const handlePrev = () => {
+    setActiveIndex((prev) => prev - 1);
+  };
 
-    let targetOpacity = 1.0;
-
-    if (viewMode === 'scatter') {
-      targetPos.set(scatterData.x, scatterData.y, scatterData.z);
-      targetRot.set(scatterData.rotX, scatterData.rotY, scatterData.rotZ);
-      targetScale.set(3 * scatterData.scale, 1.6875 * scatterData.scale, 1);
-    } else if (viewMode === 'spiral') {
-      // Flawless 360-degree floating S-Curve Cascade (matches reference image perfectly)
-      const time = state.clock.getElapsedTime();
-      const speed = 0.03; 
-      const loops = 1.0; 
-      
-      const baseT = index / total; 
-      const animatedT = (baseT + time * speed) % 1.0;
-      
-      // Start at -PI (Top-Back), sweep Left (-PI/2), Front (0), Right (PI/2), Back (PI)
-      const tAngle = -Math.PI + animatedT * Math.PI * 2 * loops;
-      
-      // Dynamic layering offset perfectly prevents Z-fighting
-      const layerOffset = animatedT * 1.0; 
-      const radiusX = 6.5 + layerOffset;
-      const radiusZ = 3.5 + layerOffset;
-      
-      const x = Math.sin(tAngle) * radiusX;
-      
-      // Z brings cards majestically forward in the center, pushes back at top/bottom
-      const z = Math.cos(tAngle) * radiusZ;
-      
-      // Tall sweeping diagonal drop across the screen
-      const y = 4.5 - animatedT * 9.0; 
-      
-      // Cards gracefully swivel inward to always face the camera
-      const rotY = Math.sin(tAngle) * (Math.PI / 5); 
-      
-      // Playful, organic random slants (exactly as seen in reference)
-      const seed = index * 123.45;
-      const rotZ = Math.sin(seed) * (15 * Math.PI / 180); 
-      const rotX = Math.cos(seed) * (15 * Math.PI / 180);
-
-      targetPos.set(x, y, z);
-      targetRot.set(rotX, rotY, rotZ);
-      targetScale.set(3 * 1.1, 1.6875 * 1.1, 1);
-
-      // Fade out at the very top and very bottom so they loop seamlessly
-      const dist = Math.abs(animatedT - 0.5);
-      targetOpacity = Math.max(0, 1.0 - Math.pow(dist * 2, 4));
-    } else {
-      const listCols = 4;
-      const listRow = Math.floor(index / listCols);
-      const listCol = index % listCols;
-      
-      const xSpacing = 3.5;
-      const ySpacing = 2.5;
-      
-      const listX = (listCol - (listCols - 1) / 2) * xSpacing;
-      const listY = -((listRow - Math.floor(total / listCols) / 2) * ySpacing) + 1.5;
-      
-      targetPos.set(listX, listY, 0);
-      targetRot.set(0, 0, 0);
-      targetScale.set(3, 1.6875, 1);
-    }
-
-    // Bypass lerp if the card is snapping from bottom to top in infinite scroll
-    if (viewMode === 'spiral' && Math.abs(meshRef.current.position.y - targetPos.y) > 4) {
-      meshRef.current.position.copy(targetPos);
-      meshRef.current.quaternion.setFromEuler(targetRot);
-      materialRef.current.uniforms.opacity.value = 0;
-    } else {
-      meshRef.current.position.lerp(targetPos, 0.08);
-      const currentQuat = meshRef.current.quaternion;
-      const tQuat = new THREE.Quaternion().setFromEuler(targetRot);
-      currentQuat.slerp(tQuat, 0.08);
-    }
+  // Auto-rotate with dynamic duration based on partnership tier
+  useEffect(() => {
+    const contentIndex = ((activeIndex % total) + total) % total;
+    const currentCard = cardsContent[contentIndex];
     
-    meshRef.current.scale.lerp(targetScale, 0.08);
+    // Edge Editz gets 4 seconds, Go gets 2 seconds
+    const isPro = currentCard.title.includes("Edge");
+    const delay = isPro ? 4000 : 2000;
 
-    // Keep cards as pristine flat planes for flawless scatter layering
-    const targetBend = 0.0;
-    materialRef.current.uniforms.bendFactor.value = THREE.MathUtils.lerp(
-      materialRef.current.uniforms.bendFactor.value, 
-      targetBend, 
-      0.08
-    );
+    const timer = setTimeout(() => {
+      handleNext();
+    }, delay);
     
-    // Set physical bend radius to perfectly match the average mathematical layout radius
-    materialRef.current.uniforms.uRadius.value = 8.75; 
-    materialRef.current.uniforms.uScale.value.set(targetScale.x, targetScale.y);
-    materialRef.current.uniforms.opacity.value = THREE.MathUtils.lerp(
-      materialRef.current.uniforms.opacity.value,
-      targetOpacity,
-      0.1
-    );
-  });
+    return () => clearTimeout(timer);
+  }, [activeIndex]); // Reset timer whenever the card changes
 
   return (
-    <group>
-      <mesh ref={meshRef}>
-        <planeGeometry args={[1, 1, 32, 1]} />
-        <shaderMaterial 
-          ref={materialRef}
-          vertexShader={vertexShader}
-          fragmentShader={fragmentShader}
-          uniforms={uniforms}
-          side={THREE.DoubleSide}
-          transparent={true}
-        />
-      </mesh>
-    </group>
-  );
-};
+    <div className="absolute inset-0 flex flex-col items-center justify-end overflow-hidden z-10 bg-black pointer-events-none">
+      {/* Background gradient */}
+      <div 
+        className="absolute inset-0 z-0 pointer-events-none" 
+        style={{
+          backgroundImage: 'url(/blue-black-gradient.png)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat'
+        }} 
+      />
 
-const Scene = ({ images, viewMode }: { images: string[], viewMode: 'scatter' | 'spiral' | 'list' }) => {
-  const groupRef = useRef<THREE.Group>(null);
-  
-  const scatterLayout = useMemo(() => {
-    const layout: CardData[] = [];
-    const minDistance = 2.5; 
-    
-    for (let i = 0; i < images.length; i++) {
-      let attempts = 0;
-      let pos = { x: 0, y: 0, z: 0 };
-      
-      while (attempts < 100) {
-        pos = {
-          x: (seededRandom(i * 100 + attempts) - 0.5) * 16,
-          y: (seededRandom(i * 100 + attempts + 1) - 0.5) * 8,
-          z: (seededRandom(i * 100 + attempts + 2) - 0.5) * 4
-        };
-        
-        let collides = false;
-        for (const existing of layout) {
-          const dx = existing.x - pos.x;
-          const dy = existing.y - pos.y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < minDistance) { collides = true; break; }
-        }
-        if (!collides) break;
-        attempts++;
-      }
-      
-      const normalizedZ = (pos.z + 2) / 4;
-      const scale = 0.7 + (normalizedZ * 0.4);
-      
-      const maxRotZ = 15 * (Math.PI / 180);
-      const rotZ = (seededRandom(i * 200) - 0.5) * 2 * maxRotZ;
-      const maxTilt = 5 * (Math.PI / 180);
-      const rotX = (seededRandom(i * 201) - 0.5) * 2 * maxTilt;
-      const rotY = (seededRandom(i * 202) - 0.5) * 2 * maxTilt;
-      layout.push({ x: pos.x, y: pos.y, z: pos.z, rotX, rotY, rotZ, scale });
-    }
-    return layout;
-  }, [images.length]);
 
-  const spiralLayout = useMemo(() => {
-    const layout: CardData[] = [];
-    for (let i = 0; i < images.length; i++) {
-      const t = i / Math.max(1, images.length - 1);
-      
-      const loops = 1.2; 
-      const radius = 6.0; 
-      // Offset angle so middle cards start near the front
-      const angle = (t - 0.5) * Math.PI * 2 * loops;
-      
-      const x = Math.sin(angle) * radius;
-      const z = Math.cos(angle) * radius;
-      
-      const y = 3 - t * 6; 
-      
-      const rotY = angle;
-      const rotZ = -8 * Math.PI / 180;
-      const rotX = 0;
+      {/* The Dome Cards Layout */}
+      <div className="absolute bottom-[20%] w-full flex justify-center items-end z-10 pointer-events-none">
+        <AnimatePresence>
+            {[-4, -3, -2, -1, 0, 1, 2, 3, 4].map((offset) => {
+              // The absolute index in our infinite timeline
+              const absoluteIndex = activeIndex + offset;
+              // The actual content index (safely wrapped to 0-4)
+              const contentIndex = ((absoluteIndex % total) + total) % total;
+              const content = cardsContent[contentIndex];
+              
+              // Helper to calculate exact geometric position for any offset on the dome
+              const getTransform = (off: number) => {
+                const angleStepDeg = 12; // 12 degrees per card
+                const xStep = 240; // 240px horizontal spacing
+                const angleStepRad = angleStepDeg * (Math.PI / 180);
+                const k = angleStepRad / xStep;
+                
+                let angleDeg = off * angleStepDeg; 
+                const angleRad = angleDeg * (Math.PI / 180);
+                
+                const xOff = off * xStep; 
+                
+                // The ultimate geometric truth: Integrating tan(angle) ensures the card's tilt
+                // perfectly matches the tangent slope of the arch. This guarantees the bottom 
+                // edges sit 100% flush against the curve without any jagged intersections.
+                // Formula: y = -ln(cos(k * x)) / k
+                let yOff = 0;
+                if (Math.abs(angleRad) < Math.PI / 2) {
+                  yOff = -Math.log(Math.cos(angleRad)) / k;
+                }
+                
+                // Restore the subtle "book-end" flare to the outermost cards
+                if (Math.abs(off) >= 3) {
+                  angleDeg = angleDeg - (5 * Math.sign(off)); 
+                }
+                
+                // Keep cards beyond offset 3 fully invisible
+                const isHidden = Math.abs(off) > 3;
 
-      // Scale tuned back to elegant proportions (1.2) so it breathes properly
-      layout.push({ x, y, z, rotX, rotY, rotZ, scale: 1.2 });
-    }
-    return layout;
-  }, [images.length]);
+                return {
+                  x: xOff,
+                  y: yOff,
+                  rotate: angleDeg,
+                  scale: off === 0 ? 1.15 : 1, // Make center card prominently larger
+                  opacity: isHidden ? 0 : 1
+                };
+              };
 
-  useFrame((state, delta) => {
-    if (!groupRef.current) return;
-    
-    const time = state.clock.getElapsedTime();
-    
-    if (viewMode === 'spiral') {
-      // Keep the path firmly anchored so the S-curve beautifully faces the camera,
-      // letting the cards do the sliding motion gracefully.
-      groupRef.current.rotation.y = THREE.MathUtils.lerp(groupRef.current.rotation.y, 0, 0.05);
-      groupRef.current.rotation.x = THREE.MathUtils.lerp(groupRef.current.rotation.x, 0, 0.05);
-      
-      // Gentle floating breathing animation
-      groupRef.current.position.y = Math.sin(time * 0.5) * 0.2;
-      groupRef.current.position.x = 0;
-    } else if (viewMode === 'scatter') {
-      groupRef.current.rotation.y = THREE.MathUtils.lerp(groupRef.current.rotation.y, 0, 0.05);
-      groupRef.current.rotation.x = THREE.MathUtils.lerp(groupRef.current.rotation.x, 0, 0.05);
-      
-      groupRef.current.position.y = Math.sin(time * 0.5) * 0.2;
-      groupRef.current.position.x = Math.cos(time * 0.3) * 0.1;
-    } else {
-      groupRef.current.rotation.y = THREE.MathUtils.lerp(groupRef.current.rotation.y, 0, 0.05);
-      groupRef.current.rotation.x = THREE.MathUtils.lerp(groupRef.current.rotation.x, 0, 0.05);
-      
-      groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, 0, 0.05);
-      groupRef.current.position.x = THREE.MathUtils.lerp(groupRef.current.position.x, 0, 0.05);
-    }
-  });
+              const current = getTransform(offset);
+              const outer = getTransform(offset > 0 ? offset + 1 : offset - 1);
+              
+              const zIndex = 20 - Math.abs(offset);
 
-  return (
-    <group ref={groupRef}>
-      {images.map((img, i) => (
-        <Card 
-          key={i} 
-          url={img} 
-          index={i} 
-          total={images.length} 
-          viewMode={viewMode}
-          scatterData={scatterLayout[i]}
-          spiralData={spiralLayout[i]}
-        />
-      ))}
-    </group>
-  );
-};
+              return (
+                <motion.div
+                  key={absoluteIndex} // Unique key ensures Framer Motion treats each as a distinct card
+                  className="absolute w-[340px] h-[480px] rounded-[32px] overflow-hidden flex flex-col shadow-[0_8px_32px_rgba(0,0,0,0.3)]"
+                  style={{
+                    left: '50%',
+                    marginLeft: '-170px',
+                    bottom: '15%',
+                    transformOrigin: 'bottom center', // Bottom pivoting guarantees the bottom curve is 100% mathematically flawless
+                    background: 'linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.02) 100%)',
+                    backdropFilter: 'blur(16px)',
+                    WebkitBackdropFilter: 'blur(16px)',
+                    borderTop: '1px solid rgba(255,255,255,0.3)',
+                    borderLeft: '1px solid rgba(255,255,255,0.2)',
+                    borderRight: '1px solid rgba(255,255,255,0.05)',
+                    borderBottom: '1px solid rgba(255,255,255,0.05)',
+                  }}
+                  initial={{ 
+                    opacity: 0, 
+                    x: outer.x,
+                    y: outer.y,
+                    rotate: outer.rotate,
+                    scale: outer.scale,
+                    zIndex: zIndex - 1 // Start underneath
+                  }}
+                  animate={{ 
+                    opacity: current.opacity, 
+                    x: current.x,
+                    y: current.y,
+                    rotate: current.rotate,
+                    scale: current.scale,
+                    zIndex: zIndex
+                  }}
+                  exit={{ 
+                    opacity: 0, 
+                    x: outer.x,
+                    y: outer.y,
+                    rotate: outer.rotate,
+                    scale: outer.scale,
+                    zIndex: zIndex - 1
+                  }}
+                  transition={{ 
+                    type: 'spring', 
+                    stiffness: 140, // Ultra-smooth majestic sweep, not bouncy
+                    damping: 24, 
+                    mass: 1,
+                    // Delay z-index swap so cards cross over flawlessly mid-air instead of instantly popping on top
+                    zIndex: { delay: 0.15 } 
+                  }}
+                >
+              <div className="w-full h-full p-8 flex flex-col relative z-10">
+                {(content as any).youtubeLink && (
+                  <a 
+                    href={(content as any).youtubeLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="absolute top-6 right-6 flex items-center justify-center gap-1.5 text-white/60 hover:text-white text-[9px] font-bold tracking-[0.2em] uppercase border border-white/10 px-2.5 py-1 rounded-full bg-white/5 hover:bg-white/10 transition-all w-max pointer-events-auto z-20 backdrop-blur-md"
+                  >
+                    <svg viewBox="0 0 24 24" fill="currentColor" className="w-2.5 h-2.5">
+                      <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.5 12 3.5 12 3.5s-7.505 0-9.377.55a3.016 3.016 0 0 0-2.122 2.136C0 8.07 0 12 0 12s0 3.93.501 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.55 9.377.55 9.377.55s7.505 0 9.377-.55a3.016 3.016 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                    </svg>
+                    <span>Subscribe</span>
+                  </a>
+                )}
+                {/* Top Header - Title and Description */}
+                <div className="text-left mt-6">
+                  <h2 className="text-white text-[24px] font-medium leading-tight mb-4 whitespace-pre-line tracking-tight pr-24">
+                    {content.title}
+                  </h2>
+                  <p className="text-white/60 text-[13px] leading-[1.6] tracking-wide pr-4">
+                    {content.description}
+                  </p>
+                </div>
 
-const Loader = () => {
-  return (
-    <Html center>
-      <div className="text-white/50 animate-pulse font-medium whitespace-nowrap">Loading 3D Engine...</div>
-    </Html>
-  )
-}
-
-class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasError: boolean, error: Error | null}> {
-  constructor(props: any) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
-  static getDerivedStateFromError(error: any) {
-    return { hasError: true, error };
-  }
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 text-red-500 font-mono p-8 overflow-auto">
-          <div>
-            <h1 className="text-xl font-bold mb-4">React Error</h1>
-            <pre>{this.state.error?.toString()}</pre>
-            <pre className="text-sm mt-4 opacity-50">{this.state.error?.stack}</pre>
-          </div>
-        </div>
-      );
-    }
-    return this.props.children;
-  }
-}
-
-export const SpiralGallery: React.FC<SpiralGalleryProps> = ({ images }) => {
-  const [viewMode, setViewMode] = useState<'spiral' | 'scatter' | 'list'>('spiral');
-
-  return (
-    <div className="absolute inset-0 flex flex-col items-center justify-center overflow-hidden z-10 bg-black">
-      <div className="absolute inset-0 z-0 pointer-events-none" style={{
-        backgroundImage: 'url(/blue-black-gradient.png)',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat'
-      }} />
-
-      <div className="z-10 flex flex-col items-center justify-center gap-6">
-        <h1 className="text-6xl md:text-8xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-white/40 tracking-tighter drop-shadow-2xl">
-          COMING SOON
-        </h1>
-        <p className="text-white/60 text-lg md:text-xl font-medium tracking-widest uppercase">
-          Something amazing is in the works
-        </p>
+                {/* Main Content - Centered Icon */}
+                <div className="flex-1 flex flex-col items-center justify-center">
+                  <div className="flex items-center justify-center gap-4">
+                    {content.images ? (
+                      content.images.map((img, idx) => (
+                        <React.Fragment key={idx}>
+                          <img 
+                            src={img} 
+                            alt={content.title} 
+                            className={`w-[90px] drop-shadow-[0_20px_30px_rgba(0,0,0,0.4)] opacity-90 mix-blend-plus-lighter ${img.includes('edz.png') ? 'h-[90px] rounded-full object-cover' : 'h-auto object-contain'}`} 
+                          />
+                          {idx === 0 && <span className="text-white/40 text-2xl font-light">X</span>}
+                        </React.Fragment>
+                      ))
+                    ) : (
+                      <img 
+                        src={content.image} 
+                        alt={content.title} 
+                        className="w-[180px] h-auto drop-shadow-[0_20px_30px_rgba(0,0,0,0.4)] opacity-90 object-contain mix-blend-plus-lighter" 
+                      />
+                    )}
+                  </div>
+                  {content.images && (
+                    <img 
+                      src="/pro.png" 
+                      alt="Pro Plus" 
+                      className="mt-6 w-[70px] h-auto drop-shadow-[0_15px_20px_rgba(0,0,0,0.5)] opacity-90 object-contain mix-blend-plus-lighter" 
+                    />
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          );
+        })}
+        </AnimatePresence>
       </div>
     </div>
   );
