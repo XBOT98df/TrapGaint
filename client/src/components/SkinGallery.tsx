@@ -302,28 +302,6 @@ export const SkinGallery: React.FC<SkinGalleryProps> = ({
         )}
       </div>
       
-      {/* Remove Skin Option - only show on first page */}
-      {currentPage === 0 && (
-        <div className="mt-2">
-          <button
-            onClick={async () => {
-              setSelectedSkinId(null);
-              if (onRemoveSkin) {
-                try {
-                  await onRemoveSkin();
-                } catch (error) {
-                  console.error('Failed to remove skin:', error);
-                }
-              }
-            }}
-            className={`w-full bg-zinc-900 rounded-lg p-6 cursor-pointer transition-all hover:bg-zinc-800`}
-          >
-            <div className="flex items-center justify-center">
-              <h3 className="text-white font-medium text-sm tracking-widest" style={{ fontFamily: "'Panchang', sans-serif" }}>REMOVE SKIN</h3>
-            </div>
-          </button>
-        </div>
-      )}
     </>
   );
 };

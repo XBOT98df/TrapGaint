@@ -202,9 +202,9 @@ impl super::MinecraftLauncher {
         let cape_index = cape_index.map(Self::normalize_selected_cape_index);
 
         if let Some(index) = cape_index {
-            if !(0..=18).contains(&index) {
+            if !(0..=30).contains(&index) {
                 return Err(format!(
-                    "Invalid cape index: {} (expected 0-18 or null)",
+                    "Invalid cape index: {} (expected 0-30 or null)",
                     index
                 ));
             }

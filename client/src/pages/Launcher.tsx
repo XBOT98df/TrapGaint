@@ -1141,9 +1141,14 @@ export default function Launcher() {
     const root = document.documentElement;
     const cursorImages = equippedCursor !== null ? cursorsBase64[equippedCursor] : undefined;
 
+    const scaleCursor = (base64: string, size: number = 64) => {
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><image href="${base64}" width="${size}" height="${size}"/></svg>`;
+      return `data:image/svg+xml;base64,${btoa(svg)}`;
+    };
+
     if (cursorImages) {
-      root.style.setProperty('--app-cursor-default', `url("${cursorImages.default}") 0 0`);
-      root.style.setProperty('--app-cursor-pointer', `url("${cursorImages.pointer}") 0 0`);
+      root.style.setProperty('--app-cursor-default', `url("${scaleCursor(cursorImages.default)}") 0 0`);
+      root.style.setProperty('--app-cursor-pointer', `url("${scaleCursor(cursorImages.pointer)}") 0 0`);
     } else {
       root.style.removeProperty('--app-cursor-default');
       root.style.removeProperty('--app-cursor-pointer');
@@ -6493,16 +6498,71 @@ export default function Launcher() {
     );
   }, [handlePagedScrollNavigation, miscModpackPage, miscModpackPageCount, navigateMiscModpackPage, openMiscVersionMenuKey]);
 
+  const handleSkinWheel = useCallback((event: ReactWheelEvent<HTMLDivElement>) => {
+    if (cursorScrollLockRef.current) return;
+    
+    cursorScrollDeltaRef.current += event.deltaY || event.deltaX;
+    
+    if (Math.abs(cursorScrollDeltaRef.current) > 50) {
+      if (cursorScrollDeltaRef.current > 0) {
+        const total = skinsActiveTab === 'capes' ? CAPE_TOTAL_PAGES : 10;
+        setCurrentPage(prev => Math.min(total - 1, prev + 1));
+      } else {
+        setCurrentPage(prev => Math.max(0, prev - 1));
+      }
+      cursorScrollDeltaRef.current = 0;
+      cursorScrollLockRef.current = true;
+      setTimeout(() => { cursorScrollLockRef.current = false; }, 300);
+    }
+  }, [skinsActiveTab]);
+
   const handleCursorWheel = useCallback((event: ReactWheelEvent<HTMLDivElement>) => {
     handlePagedScrollNavigation(
       event,
       cursorPage,
-      2, // totalPages
+      8, // totalPages (24 cursors / 3 per page)
       setCursorPage,
       cursorScrollDeltaRef,
       cursorScrollLockRef
     );
   }, [handlePagedScrollNavigation, cursorPage]);
+
+  // Keyboard navigation for skins/capes (W = backward, S = forward)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (miscStoreCategory !== 'cursors' && (skinsActiveTab === 'skins' || skinsActiveTab === 'capes')) {
+        const key = e.key.toLowerCase();
+        if (key === 'w') {
+          setCurrentPage(prev => Math.max(0, prev - 1));
+        } else if (key === 's') {
+          const total = skinsActiveTab === 'capes' ? CAPE_TOTAL_PAGES : 10;
+          setCurrentPage(prev => Math.min(total - 1, prev + 1));
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [skinsActiveTab, miscStoreCategory]);
+
+  // Keyboard navigation for cursors (W = forward, S = backward)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (miscStoreCategory === 'cursors') { // activeTab could be 'servers' or 'store'
+        const key = e.key.toLowerCase();
+        if (key === 'w') {
+          // Backward (Prev) - Matches Left UI Button
+          setCursorPage(prev => Math.max(0, prev - 1));
+        } else if (key === 's') {
+          // Forward (Next) - Matches Right UI Button
+          setCursorPage(prev => Math.min(7, prev + 1));
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeTab, miscStoreCategory]);
 
   // Load featured mods when store tab is opened
 
@@ -9146,55 +9206,26 @@ export default function Launcher() {
 
         {/* Dot Pagination */}
         {(skinsActiveTab === 'skins' || skinsActiveTab === 'capes') && (
-          <div className="absolute bottom-16 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1">
-            {/* Generate dots with sliding window */}
+          <div className="absolute bottom-16 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2">
+            {/* Generate dots with grouped chunking window */}
             {(() => {
               const totalPages = skinsActiveTab === 'capes' ? CAPE_TOTAL_PAGES : 10;
-              const maxVisibleDots = 3; // Show max 3 dots at a time
-              
-              let startPage = Math.max(0, currentPage - Math.floor(maxVisibleDots / 2));
-              let endPage = Math.min(totalPages - 1, startPage + maxVisibleDots - 1);
-              
-              // Adjust start if we're near the end
-              if (endPage - startPage < maxVisibleDots - 1) {
-                startPage = Math.max(0, endPage - maxVisibleDots + 1);
-              }
-              
-              const visiblePages = [];
-              for (let i = startPage; i <= endPage; i++) {
-                visiblePages.push(i);
-              }
+              const start = Math.floor(currentPage / 3) * 3;
+              const visiblePages = Array.from({ length: totalPages }).map((_, i) => i).filter(i => i >= start && i < start + 3);
               
               return (
                 <>
-                  {/* Left arrow if not at start */}
-                  {startPage > 0 && (
-                    <button
-                      onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
-                      className="w-3 h-3 bg-white/40 hover:bg-white/60 rounded-full transition-all duration-300"
-                    />
-                  )}
-                  
-                  {/* Visible page dots */}
                   {visiblePages.map((pageIndex) => (
                     <button
                       key={pageIndex}
                       onClick={() => setCurrentPage(pageIndex)}
                       className={`transition-all duration-300 ${
                         currentPage === pageIndex
-                          ? 'w-8 h-3 bg-white rounded-full' // Long capsule for current page
-                          : 'w-3 h-3 bg-white/40 hover:bg-white/60 rounded-full' // Small dots for other pages
+                          ? 'w-8 h-3 bg-white rounded-full'
+                          : 'w-3 h-3 bg-white/40 hover:bg-white/60 rounded-full'
                       }`}
                     />
                   ))}
-                  
-                  {/* Right arrow if not at end */}
-                  {endPage < totalPages - 1 && (
-                    <button
-                      onClick={() => setCurrentPage(Math.min(totalPages - 1, currentPage + 1))}
-                      className="w-3 h-3 bg-white/40 hover:bg-white/60 rounded-full transition-all duration-300"
-                    />
-                  )}
                 </>
               );
             })()}
@@ -9258,6 +9289,30 @@ export default function Launcher() {
 
         {/* Main Content - Full Width with Overlay Buttons */}
         <div className="flex-1 relative z-20">
+          {(skinsActiveTab === 'skins' || skinsActiveTab === 'capes') && (
+            <>
+              {/* W (Backward/Left) Button */}
+              <button 
+                onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
+                onWheelCapture={handleSkinWheel}
+                className="fixed left-8 top-[45%] z-[100] p-4 transition-transform hover:scale-110 active:scale-95 shrink-0"
+              >
+                <img src="/Wkeu.png" alt="W Key Backward" className="w-48 h-48 drop-shadow-2xl object-contain scale-125" />
+              </button>
+              {/* S (Forward/Right) Button */}
+              <button 
+                onClick={() => {
+                  const total = skinsActiveTab === 'capes' ? CAPE_TOTAL_PAGES : 10;
+                  setCurrentPage(prev => Math.min(total - 1, prev + 1));
+                }}
+                onWheelCapture={handleSkinWheel}
+                className="fixed right-8 top-[45%] z-[100] p-4 transition-transform hover:scale-110 active:scale-95 shrink-0"
+              >
+                <img src="/Skeu.png" alt="S Key Forward" className="w-48 h-48 drop-shadow-2xl object-contain scale-125" />
+              </button>
+            </>
+          )}
+
           {skinsActiveTab === 'skins' && (
             <div className="h-full flex items-center justify-center p-8">
               <div className="max-w-6xl w-full">
@@ -9340,35 +9395,6 @@ export default function Launcher() {
                     </div>
                   )}
                 </div>
-                
-                {/* Remove Cape Option - Show on all pages */}
-                {currentPage < CAPE_TOTAL_PAGES && (
-                  <div className="mt-2">
-                    <button
-                      onClick={async () => {
-                        setSelectedCapeIndex(null);
-                        // Auto-apply no cape immediately
-                        if (activeAccount?.username) {
-                          try {
-                            const { invoke } = await import('@tauri-apps/api/core');
-                            await invoke('set_selected_cape', {
-                              capeIndex: null
-                            });
-                          } catch (error) {
-                            console.error('Failed to remove cape:', error);
-                          }
-                        }
-                      }}
-                      className={`w-full bg-zinc-900 rounded-lg p-6 cursor-pointer transition-all hover:bg-zinc-800 ${
-                        normalizedSelectedCapeIndex === null ? 'ring-2 ring-white' : 'ring-2 ring-transparent'
-                      }`}
-                    >
-                      <div className="flex items-center justify-center">
-                        <h3 className="text-white font-medium text-sm tracking-widest" style={{ fontFamily: "'Panchang', sans-serif" }}>REMOVE CAPE</h3>
-                      </div>
-                    </button>
-                  </div>
-                )}
               </div>
             </div>
           )}
@@ -10740,16 +10766,43 @@ export default function Launcher() {
                           { id: 3, color: '#76b5f5', cursor1: '/demon-slayer-cursor.png', cursor2: '/demon-slayer-pointer.png' },
                           { id: 4, color: '#ffc745', cursor1: '/fifa-cursor.png', cursor2: '/fifa-pointer.png' },
                           { id: 5, color: '#a9a3b8', cursor1: '/hollow-knight-cursor.png', cursor2: '/hollow-knight-pointer.png' },
-                          { id: 6, color: '#f576e2', cursor1: '/preppy-pink-cursor.png', cursor2: '/preppy-pink-pointer.png' }
+                          { id: 6, color: '#f576e2', cursor1: '/preppy-pink-cursor.png', cursor2: '/preppy-pink-pointer.png' },
+                          { id: 7, color: '#c0c0c0', cursor1: '/chrome-hearts-cursor.png', cursor2: '/chrome-hearts-pointer.png' },
+                          { id: 8, color: '#f5d76e', cursor1: null, cursor2: '/ronaldo-pointer.png' },
+                          { id: 9, color: '#a02c2c', cursor1: '/dungeons-heartstealer-cursor.png', cursor2: '/dungeons-heartstealer-pointer.png' },
+                          { id: 10, color: '#3a8c4a', cursor1: '/dungeons-sabrewing-cursor.png', cursor2: '/dungeons-sabrewing-pointer.png' },
+                          { id: 11, color: '#dc143c', cursor1: '/murasama-cursor.png', cursor2: '/murasama-pointer.png' },
+                          { id: 12, color: '#e8b3ff', cursor1: '/silksong-cursor.png', cursor2: '/silksong-pointer.png' },
+                          { id: 13, color: '#ff4d6d', cursor1: '/among-us-cursor.png', cursor2: '/among-us-pointer.png' },
+                          { id: 14, color: '#ef0107', cursor1: '/arsenal-cursor.png', cursor2: '/arsenal-pointer.png' },
+                          { id: 15, color: '#7fffd4', cursor1: '/plesiosaur-cursor.png', cursor2: '/plesiosaur-pointer.png' },
+                          { id: 16, color: '#ffb6c1', cursor1: '/hello-kitty-cursor.png', cursor2: '/hello-kitty-pointer.png' },
+                          { id: 17, color: '#ff69b4', cursor1: '/kson-cursor.png', cursor2: '/kson-pointer.png' },
+                          { id: 18, color: '#9b30ff', cursor1: '/magic-crystals-cursor.png', cursor2: '/magic-crystals-pointer.png' },
+                          { id: 19, color: '#da291c', cursor1: '/man-utd-cursor.png', cursor2: '/man-utd-pointer.png' },
+                          { id: 20, color: '#ffc0cb', cursor1: '/lolita-cursor.png', cursor2: '/lolita-pointer.png' },
+                          { id: 21, color: '#ff77ff', cursor1: '/pink-transformer-cursor.png', cursor2: '/pink-transformer-pointer.png' },
+                          { id: 22, color: '#fcbf00', cursor1: '/real-madrid-cursor.png', cursor2: '/real-madrid-pointer.png' },
+                          { id: 23, color: '#1e90ff', cursor1: '/ronaldinho-cursor.png', cursor2: '/ronaldinho-pointer.png' }
                         ];
-                        const CURSORS_PER_PAGE = 4;
+                        const CURSORS_PER_PAGE = 3;
                         const totalPages = Math.ceil(ALL_CURSORS.length / CURSORS_PER_PAGE);
                         const paginatedCursors = ALL_CURSORS.slice(cursorPage * CURSORS_PER_PAGE, (cursorPage + 1) * CURSORS_PER_PAGE);
                         
                         return (
-                          <div className="flex flex-col items-center w-full">
-                            <div 
-                              className="flex justify-center gap-6 overflow-x-auto snap-x hide-scrollbar px-4 py-4 w-full" 
+                          <div className="flex flex-col items-center w-full relative">
+                            <div className="flex flex-row items-center justify-center w-full px-4 gap-4 relative">
+                              {/* W (Forward/Left) Button */}
+                              <button 
+                                onClick={() => setCursorPage(prev => Math.max(0, prev - 1))}
+                                onWheelCapture={handleCursorWheel}
+                                className="fixed left-24 top-[38%] z-[100] p-4 transition-transform hover:scale-110 active:scale-95 shrink-0"
+                              >
+                                <img src="/Wkeu.png" alt="W Key Forward" className="w-48 h-48 drop-shadow-2xl object-contain scale-125" />
+                              </button>
+
+                              <div 
+                                className="flex justify-center gap-6 overflow-x-auto snap-x hide-scrollbar px-4 py-4 w-full max-w-[900px]" 
                               style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                               onWheelCapture={handleCursorWheel}
                             >
@@ -10781,25 +10834,34 @@ export default function Launcher() {
                                   >
                                     {/* Cursor Previews Side by Side */}
                                     <div className="flex items-center justify-center gap-6">
-                                      <img src={cursor.cursor1} alt="Cursor 1" className="w-24 h-24 object-contain drop-shadow-lg hover:scale-110 transition-transform duration-300" />
+                                      {cursor.cursor1 && <img src={cursor.cursor1} alt="Cursor 1" className="w-24 h-24 object-contain drop-shadow-lg hover:scale-110 transition-transform duration-300" />}
                                       {cursor.cursor2 && <img src={cursor.cursor2} alt="Cursor 2" className="w-24 h-24 object-contain drop-shadow-lg hover:scale-110 transition-transform duration-300" />}
                                     </div>
                                   </div>
                                 </div>
                               ))}
+                              </div>
+
+                              {/* S (Backward/Right) Button */}
+                              <button 
+                                onClick={() => setCursorPage(prev => Math.min(7, prev + 1))}
+                                onWheelCapture={handleCursorWheel}
+                                className="fixed right-24 top-[38%] z-[100] p-4 transition-transform hover:scale-110 active:scale-95 shrink-0"
+                              >
+                                <img src="/Skeu.png" alt="S Key Backward" className="w-48 h-48 drop-shadow-2xl object-contain scale-125" />
+                              </button>
                             </div>
-                            
+
                             {/* Dot Pagination */}
                             {totalPages > 1 && (
                               <div className="flex items-center gap-2 mt-6">
-                                {cursorPage > 0 && (
-                                  <button
-                                    onClick={() => setCursorPage(Math.max(0, cursorPage - 1))}
-                                    className="w-3 h-3 bg-white/40 hover:bg-white/60 rounded-full transition-all duration-300"
-                                  />
-                                )}
-                                
-                                {Array.from({ length: totalPages }).map((_, i) => (
+                                {Array.from({ length: totalPages })
+                                  .map((_, i) => i)
+                                  .filter(i => {
+                                    const start = Math.floor(cursorPage / 3) * 3;
+                                    return i >= start && i < start + 3;
+                                  })
+                                  .map((i) => (
                                   <button
                                     key={i}
                                     onClick={() => setCursorPage(i)}
@@ -10810,13 +10872,6 @@ export default function Launcher() {
                                     }`}
                                   />
                                 ))}
-                                
-                                {cursorPage < totalPages - 1 && (
-                                  <button
-                                    onClick={() => setCursorPage(Math.min(totalPages - 1, cursorPage + 1))}
-                                    className="w-3 h-3 bg-white/40 hover:bg-white/60 rounded-full transition-all duration-300"
-                                  />
-                                )}
                               </div>
                             )}
                           </div>
@@ -10890,16 +10945,43 @@ export default function Launcher() {
                           { id: 3, color: '#76b5f5', cursor1: '/demon-slayer-cursor.png', cursor2: '/demon-slayer-pointer.png' },
                           { id: 4, color: '#ffc745', cursor1: '/fifa-cursor.png', cursor2: '/fifa-pointer.png' },
                           { id: 5, color: '#a9a3b8', cursor1: '/hollow-knight-cursor.png', cursor2: '/hollow-knight-pointer.png' },
-                          { id: 6, color: '#f576e2', cursor1: '/preppy-pink-cursor.png', cursor2: '/preppy-pink-pointer.png' }
+                          { id: 6, color: '#f576e2', cursor1: '/preppy-pink-cursor.png', cursor2: '/preppy-pink-pointer.png' },
+                          { id: 7, color: '#c0c0c0', cursor1: '/chrome-hearts-cursor.png', cursor2: '/chrome-hearts-pointer.png' },
+                          { id: 8, color: '#f5d76e', cursor1: null, cursor2: '/ronaldo-pointer.png' },
+                          { id: 9, color: '#a02c2c', cursor1: '/dungeons-heartstealer-cursor.png', cursor2: '/dungeons-heartstealer-pointer.png' },
+                          { id: 10, color: '#3a8c4a', cursor1: '/dungeons-sabrewing-cursor.png', cursor2: '/dungeons-sabrewing-pointer.png' },
+                          { id: 11, color: '#dc143c', cursor1: '/murasama-cursor.png', cursor2: '/murasama-pointer.png' },
+                          { id: 12, color: '#e8b3ff', cursor1: '/silksong-cursor.png', cursor2: '/silksong-pointer.png' },
+                          { id: 13, color: '#ff4d6d', cursor1: '/among-us-cursor.png', cursor2: '/among-us-pointer.png' },
+                          { id: 14, color: '#ef0107', cursor1: '/arsenal-cursor.png', cursor2: '/arsenal-pointer.png' },
+                          { id: 15, color: '#7fffd4', cursor1: '/plesiosaur-cursor.png', cursor2: '/plesiosaur-pointer.png' },
+                          { id: 16, color: '#ffb6c1', cursor1: '/hello-kitty-cursor.png', cursor2: '/hello-kitty-pointer.png' },
+                          { id: 17, color: '#ff69b4', cursor1: '/kson-cursor.png', cursor2: '/kson-pointer.png' },
+                          { id: 18, color: '#9b30ff', cursor1: '/magic-crystals-cursor.png', cursor2: '/magic-crystals-pointer.png' },
+                          { id: 19, color: '#da291c', cursor1: '/man-utd-cursor.png', cursor2: '/man-utd-pointer.png' },
+                          { id: 20, color: '#ffc0cb', cursor1: '/lolita-cursor.png', cursor2: '/lolita-pointer.png' },
+                          { id: 21, color: '#ff77ff', cursor1: '/pink-transformer-cursor.png', cursor2: '/pink-transformer-pointer.png' },
+                          { id: 22, color: '#fcbf00', cursor1: '/real-madrid-cursor.png', cursor2: '/real-madrid-pointer.png' },
+                          { id: 23, color: '#1e90ff', cursor1: '/ronaldinho-cursor.png', cursor2: '/ronaldinho-pointer.png' }
                         ];
-                        const CURSORS_PER_PAGE = 4;
+                        const CURSORS_PER_PAGE = 3;
                         const totalPages = Math.ceil(ALL_CURSORS.length / CURSORS_PER_PAGE);
                         const paginatedCursors = ALL_CURSORS.slice(cursorPage * CURSORS_PER_PAGE, (cursorPage + 1) * CURSORS_PER_PAGE);
                         
                         return (
-                          <div className="flex flex-col items-center w-full">
-                            <div 
-                              className="flex justify-center gap-6 overflow-x-auto snap-x hide-scrollbar px-4 py-4 w-full" 
+                          <div className="flex flex-col items-center w-full relative">
+                            <div className="flex flex-row items-center justify-center w-full px-4 gap-4 relative">
+                              {/* W (Forward/Left) Button */}
+                              <button 
+                                onClick={() => setCursorPage(prev => Math.max(0, prev - 1))}
+                                onWheelCapture={handleCursorWheel}
+                                className="fixed left-24 top-[38%] z-[100] p-4 transition-transform hover:scale-110 active:scale-95 shrink-0"
+                              >
+                                <img src="/Wkeu.png" alt="W Key Forward" className="w-48 h-48 drop-shadow-2xl object-contain scale-125" />
+                              </button>
+
+                              <div 
+                                className="flex justify-center gap-6 overflow-x-auto snap-x hide-scrollbar px-4 py-4 w-full max-w-[900px]" 
                               style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                               onWheelCapture={handleCursorWheel}
                             >
@@ -10931,25 +11013,34 @@ export default function Launcher() {
                                   >
                                     {/* Cursor Previews Side by Side */}
                                     <div className="flex items-center justify-center gap-6">
-                                      <img src={cursor.cursor1} alt="Cursor 1" className="w-24 h-24 object-contain drop-shadow-lg hover:scale-110 transition-transform duration-300" />
+                                      {cursor.cursor1 && <img src={cursor.cursor1} alt="Cursor 1" className="w-24 h-24 object-contain drop-shadow-lg hover:scale-110 transition-transform duration-300" />}
                                       {cursor.cursor2 && <img src={cursor.cursor2} alt="Cursor 2" className="w-24 h-24 object-contain drop-shadow-lg hover:scale-110 transition-transform duration-300" />}
                                     </div>
                                   </div>
                                 </div>
                               ))}
+                              </div>
+
+                              {/* S (Backward/Right) Button */}
+                              <button 
+                                onClick={() => setCursorPage(prev => Math.min(7, prev + 1))}
+                                onWheelCapture={handleCursorWheel}
+                                className="fixed right-24 top-[38%] z-[100] p-4 transition-transform hover:scale-110 active:scale-95 shrink-0"
+                              >
+                                <img src="/Skeu.png" alt="S Key Backward" className="w-48 h-48 drop-shadow-2xl object-contain scale-125" />
+                              </button>
                             </div>
-                            
+
                             {/* Dot Pagination */}
                             {totalPages > 1 && (
                               <div className="flex items-center gap-2 mt-6">
-                                {cursorPage > 0 && (
-                                  <button
-                                    onClick={() => setCursorPage(Math.max(0, cursorPage - 1))}
-                                    className="w-3 h-3 bg-white/40 hover:bg-white/60 rounded-full transition-all duration-300"
-                                  />
-                                )}
-                                
-                                {Array.from({ length: totalPages }).map((_, i) => (
+                                {Array.from({ length: totalPages })
+                                  .map((_, i) => i)
+                                  .filter(i => {
+                                    const start = Math.floor(cursorPage / 3) * 3;
+                                    return i >= start && i < start + 3;
+                                  })
+                                  .map((i) => (
                                   <button
                                     key={i}
                                     onClick={() => setCursorPage(i)}
@@ -10960,13 +11051,6 @@ export default function Launcher() {
                                     }`}
                                   />
                                 ))}
-                                
-                                {cursorPage < totalPages - 1 && (
-                                  <button
-                                    onClick={() => setCursorPage(Math.min(totalPages - 1, cursorPage + 1))}
-                                    className="w-3 h-3 bg-white/40 hover:bg-white/60 rounded-full transition-all duration-300"
-                                  />
-                                )}
                               </div>
                             )}
                           </div>

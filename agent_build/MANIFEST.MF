@@ -1,0 +1,5 @@
+Manifest-Version: 1.0
+Premain-Class: org.lwjgl.dragon.cursor.DragonCursorAgent
+Can-Redefine-Classes: true
+Can-Retransform-Classes: true
+

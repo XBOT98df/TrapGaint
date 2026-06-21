@@ -9333,6 +9333,18 @@ impl MinecraftLauncher {
             16 => Some("cape8.png"),
             17 => Some("cape9.png"),
             18 => Some("do.gif"),
+            19 => Some("SkinMC-Cape-15433.png"),
+            20 => Some("SkinMC-Cape-91129.png"),
+            21 => Some("SkinMC-Cape-15460.png"),
+            22 => Some("SkinMC-Cape-4985.png"),
+            23 => Some("SkinMC-Cape-155912.png"),
+            24 => Some("SkinMC-Cape-155822.png"),
+            25 => Some("SkinMC-Cape-155834.png"),
+            26 => Some("SkinMC-Cape-156238.png"),
+            27 => Some("SkinMC-Cape-155867.png"),
+            28 => Some("SkinMC-Cape-156221.png"),
+            29 => Some("SkinMC-Cape-155622.png"),
+            30 => Some("SkinMC-Cape-155769.png"),
             _ => None,
         }
     }

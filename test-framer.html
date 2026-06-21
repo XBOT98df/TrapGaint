@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head><script type="importmap">
+  {
+    "imports": {
+      "react": "https://esm.sh/react@18.2.0",
+      "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+      "react/jsx-runtime": "https://esm.sh/react@18.2.0/jsx-runtime",
+      "framer": "https://esm.sh/framer@2.4.1",
+      "framer-motion": "https://esm.sh/framer-motion@10.16.4"
+    }
+  }
+</script></head>
+<body>
+<div id="root"></div>
+<script type="module">
+  import React from 'react';
+  import { createRoot } from 'react-dom/client';
+  import TextIlluminate from 'https://framer.com/m/TextIlluminate-R6E5eW.js@msqXIMfsqeB68dv9J7mC';
+  
+  const root = createRoot(document.getElementById('root'));
+  root.render(React.createElement(TextIlluminate, { text: "TRAPGAINT" }));
+</script>
+</body>
+</html>

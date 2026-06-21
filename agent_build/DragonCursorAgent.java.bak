@@ -1,0 +1,249 @@
+package org.lwjgl.dragon.cursor;
+
+import net.bytebuddy.agent.builder.AgentBuilder;
+import net.bytebuddy.asm.Advice;
+import net.bytebuddy.matcher.ElementMatchers;
+import net.bytebuddy.description.type.TypeDescription;
+import net.bytebuddy.dynamic.DynamicType;
+import net.bytebuddy.utility.JavaModule;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.lang.instrument.Instrumentation;
+import java.nio.ByteBuffer;
+import java.util.Date;
+
+public class DragonCursorAgent {
+    public static int cursorState = 0;
+    public static int initAttempts = 0;
+
+    public static long customCursorHandle = 0L;
+    public static long customPointerHandle = 0L;
+
+    public static long standardArrowHandle = 0L;
+    public static long standardHandHandle = 0L;
+
+    public static long lastWindowHandle = 0L;
+    public static int debugSetCursorCount = 0;
+
+    public static String cursorImagePath;
+    public static String pointerImagePath;
+    public static int cursorSize;
+
+    public static void log(String message) {
+        System.out.println("[" + new Date() + "] " + message);
+    }
+
+    public static void premain(String args, Instrumentation inst) {
+        System.out.println("[DragonCursor] dragon.cursor.image = " + System.getProperty("dragon.cursor.image"));
+
+        log("[DragonCursor] Initializing AWT-free Custom Cursor Agent...");
+
+        cursorImagePath = System.getProperty("dragon.cursor.image", null);
+        pointerImagePath = System.getProperty("dragon.pointer.image", null);
+        
+        String sizeStr = System.getProperty("dragon.cursor.size", "64");
+        try {
+            cursorSize = Integer.parseInt(sizeStr);
+        } catch (Exception e) {
+            cursorSize = 64;
+        }
+
+        new AgentBuilder.Default()
+            .with(AgentBuilder.RedefinitionStrategy.REDEFINITION)
+            .with(AgentBuilder.InitializationStrategy.NoOp.INSTANCE)
+            .with(AgentBuilder.TypeStrategy.Default.REDEFINE)
+            .ignore(ElementMatchers.none())
+            .with(AgentBuilder.Listener.StreamWriting.toSystemError()).type(ElementMatchers.named("org.lwjgl.glfw.GLFW"))
+            .transform(new AgentBuilder.Transformer() {
+                @Override
+                public DynamicType.Builder<?> transform(DynamicType.Builder<?> builder, TypeDescription typeDescription, ClassLoader classLoader, JavaModule module, java.security.ProtectionDomain protectionDomain) {
+                    return builder
+                        .visit(Advice.to(GlfwSetCursorAdvice.class).on(ElementMatchers.named("glfwSetCursor")))
+                        .visit(Advice.to(GlfwCreateWindowAdvice.class).on(ElementMatchers.named("glfwCreateWindow")))
+                        .visit(Advice.to(GlfwShowWindowAdvice.class).on(ElementMatchers.named("glfwShowWindow")))
+                        .visit(Advice.to(GlfwCreateStandardCursorAdvice.class).on(ElementMatchers.named("glfwCreateStandardCursor")))
+                        .visit(Advice.to(GlfwDestroyCursorAdvice.class).on(ElementMatchers.named("glfwDestroyCursor")));
+                }
+            }).installOn(inst);
+            
+        log("[DragonCursor] Hooked LWJGL 3 GLFW successfully (AWT free)!");
+    }
+
+    public static ByteBuffer[] loadRawPixels(String path, int width, int height) {
+        try {
+            File file = new File(path);
+            if (!file.exists()) {
+                return null;
+            }
+            int expectedSize = width * height * 4;
+            if (file.length() != expectedSize) {
+                log("[DragonCursor] Warning: File size " + file.length() + " does not match expected " + expectedSize + " for " + width + "x" + height);
+            }
+            byte[] bytes = new byte[(int)file.length()];
+            try (FileInputStream fis = new FileInputStream(file)) {
+                int read = fis.read(bytes);
+                if (read < bytes.length) {
+                    log("[DragonCursor] Warning: Read fewer bytes than file size.");
+                }
+            }
+            ByteBuffer buffer = ByteBuffer.allocateDirect(bytes.length);
+            buffer.put(bytes);
+            buffer.flip();
+            return new ByteBuffer[]{buffer};
+        } catch (Throwable t) {
+            log("[DragonCursor] Failed to load raw image: " + path + " -> " + t.getMessage());
+            return null;
+        }
+    }
+
+    public static long createCursorFromBuffer(Class<?> glfwClass, ByteBuffer buffer, int width, int height) {
+        try {
+            Class<?> imageClass = Class.forName("org.lwjgl.glfw.GLFWImage");
+            Object imageObj = imageClass.getMethod("malloc").invoke(null);
+            
+            imageClass.getMethod("width", int.class).invoke(imageObj, width);
+            imageClass.getMethod("height", int.class).invoke(imageObj, height);
+            imageClass.getMethod("pixels", ByteBuffer.class).invoke(imageObj, buffer);
+            
+            long cursorHandle = (Long) glfwClass.getMethod("glfwCreateCursor", imageClass, int.class, int.class)
+                .invoke(null, imageObj, 0, 0);
+                
+            try {
+                imageClass.getMethod("free").invoke(imageObj);
+            } catch (Exception e) {
+                try {
+                    imageClass.getMethod("close").invoke(imageObj);
+                } catch (Exception ignored) { }
+            }
+            log("[DragonCursor] glfwCreateCursor returned: " + cursorHandle);
+
+            return cursorHandle;
+        } catch (Throwable t) {
+            log("[DragonCursor] glfwCreateCursor failed: " + t.getMessage());
+            return 0L;
+        }
+    }
+
+    public static synchronized void initializeCursor(long windowHandle) {
+        if (windowHandle == 0L) return;
+        if (cursorState != 0) return;
+        
+        if (initAttempts >= 3) {
+            cursorState = 3;
+            return;
+        }
+        
+        cursorState = 1;
+        initAttempts++;
+        
+        try {
+            Class<?> glfwClass = Class.forName("org.lwjgl.glfw.GLFW");
+            int size = cursorSize;
+            boolean createdMain = false;
+            
+            if (cursorImagePath != null) {
+                log("[DragonCursor] Loading pixels from " + cursorImagePath);
+                ByteBuffer[] buffers = loadRawPixels(cursorImagePath, size, size);
+                if (buffers != null && buffers.length > 0) {
+                    log("[DragonCursor] Creating cursor from buffer...");
+                    long handle = createCursorFromBuffer(glfwClass, buffers[0], size, size);
+                    log("[DragonCursor] createCursorFromBuffer returned: " + handle);
+                    if (handle != 0L) {
+                        createdMain = true;
+                        customCursorHandle = handle;
+                        glfwClass.getMethod("glfwSetCursor", long.class, long.class).invoke(null, windowHandle, handle);
+                        log("[DragonCursor] Custom cursor applied (handle=" + handle + ", size=" + size + ")");
+                    }
+                }
+            }
+            
+            if (pointerImagePath != null) {
+                ByteBuffer[] buffers = loadRawPixels(pointerImagePath, size, size);
+                if (buffers != null && buffers.length > 0) {
+                    long handle = createCursorFromBuffer(glfwClass, buffers[0], size, size);
+                    if (handle != 0L) {
+                        customPointerHandle = handle;
+                        log("[DragonCursor] Custom pointer cursor applied (handle=" + handle + ", size=" + size + ")");
+                    }
+                }
+            }
+            
+            if (createdMain) {
+                cursorState = 2;
+            } else {
+                log("[DragonCursor] Default cursor was not created (attempt " + initAttempts + ")");
+                cursorState = initAttempts >= 3 ? 3 : 0;
+            }
+        } catch (Throwable t) {
+            log("[DragonCursor] Init error: " + t);
+            cursorState = initAttempts >= 3 ? 3 : 0;
+        }
+    }
+
+    public static class GlfwCreateWindowAdvice {
+        @Advice.OnMethodExit
+        public static void onCreateWindow(@Advice.Return(readOnly = false) long windowHandle) {
+            System.out.println("[DragonCursor] onCreateWindow called! handle=" + windowHandle);
+
+            if (windowHandle != 0L) {
+                lastWindowHandle = windowHandle;
+                initializeCursor(windowHandle);
+            }
+        }
+    }
+
+    public static class GlfwShowWindowAdvice {
+        @Advice.OnMethodEnter
+        public static void onShowWindow(@Advice.Argument(0) long windowHandle) {
+            System.out.println("[DragonCursor] onShowWindow called! handle=" + windowHandle);
+
+            lastWindowHandle = windowHandle;
+            initializeCursor(windowHandle);
+        }
+    }
+
+    public static class GlfwSetCursorAdvice {
+        @Advice.OnMethodEnter
+        public static void onSetCursor(@Advice.Argument(0) long windowHandle, @Advice.Argument(value = 1, readOnly = false) long cursorHandle) {
+            if (debugSetCursorCount < 3) {
+                debugSetCursorCount++;
+            }
+            lastWindowHandle = windowHandle;
+            
+            if (cursorState == 0 && windowHandle != 0L) {
+                initializeCursor(windowHandle);
+            }
+            
+            if (cursorHandle == 0L && customCursorHandle != 0L) {
+                cursorHandle = customCursorHandle;
+            } else if (cursorHandle == standardArrowHandle && customCursorHandle != 0L) {
+                cursorHandle = customCursorHandle;
+            } else if (cursorHandle == standardHandHandle && customPointerHandle != 0L) {
+                cursorHandle = customPointerHandle;
+            }
+        }
+    }
+
+    public static class GlfwCreateStandardCursorAdvice {
+        @Advice.OnMethodExit
+        public static void onCreateStandardCursor(@Advice.Argument(0) int shape, @Advice.Return(readOnly = false) long cursorHandle) {
+            // 221185 is GLFW_ARROW_CURSOR
+            // 221188 is GLFW_HAND_CURSOR
+            if (shape == 221188) {
+                if (cursorHandle != 0L) standardHandHandle = cursorHandle;
+                if (customPointerHandle != 0L) cursorHandle = customPointerHandle;
+            } else if (shape == 221185) {
+                if (cursorHandle != 0L) standardArrowHandle = cursorHandle; System.out.println("[DragonCursor] onSetCursor called with shape " + shape + " handle " + cursorHandle);
+                if (customCursorHandle != 0L) cursorHandle = customCursorHandle;
+            }
+        }
+    }
+
+    public static class GlfwDestroyCursorAdvice {
+        @Advice.OnMethodEnter(skipOn = Advice.OnNonDefaultValue.class, suppress = Throwable.class)
+        public static boolean onDestroyCursor(@Advice.Argument(0) long cursorHandle) {
+            return cursorHandle != 0L && (cursorHandle == customCursorHandle || cursorHandle == customPointerHandle);
+        }
+    }
+}
