@@ -46,7 +46,8 @@ public class DragonCursorAgent {
                         try { size = Integer.parseInt(System.getProperty("dragon.cursor.size", "64")); } catch(Exception e) {}
                         
                         if (bytes.length >= 4 * size * size) {
-                            java.nio.IntBuffer intBuffer = java.nio.ByteBuffer.allocateDirect(bytes.length).order(java.nio.ByteOrder.nativeOrder()).asIntBuffer();
+                            Class<?> bufferUtilsClass = Class.forName("org.lwjgl.BufferUtils");
+                            java.nio.IntBuffer intBuffer = (java.nio.IntBuffer) bufferUtilsClass.getMethod("createIntBuffer", int.class).invoke(null, bytes.length / 4);
                             // Convert RGBA to ARGB and apply Vertical Flip (LWJGL 2 expects bottom-up)
                             for (int y = 0; y < size; y++) {
                                 for (int x = 0; x < size; x++) {
@@ -71,12 +72,13 @@ public class DragonCursorAgent {
                                                           .newInstance(size, size, 0, size - 1, 1, intBuffer, null);
                                                           
                             mouseClass.getMethod("setNativeCursor", cursorClass).invoke(null, cursorObj);
+                            if (intBuffer.capacity() < 0) System.out.println("keep-alive");
                         }
                     }
                 }
             } catch (Throwable t) {
                 try {
-                    java.io.PrintWriter pw = new java.io.PrintWriter(new java.io.FileWriter("/Users/kelpie/dragon_cursor_error.txt", true));
+                    java.io.PrintWriter pw = new java.io.PrintWriter(new java.io.FileWriter(System.getProperty("user.home") + "/dragon_cursor_error.txt", true));
                     pw.println("Lwjgl2MouseCreateAdvice Exception:");
                     t.printStackTrace(pw);
                     pw.close();
@@ -104,7 +106,8 @@ public class DragonCursorAgent {
                         try { size = Integer.parseInt(System.getProperty("dragon.cursor.size", "64")); } catch(Exception e) {}
                         
                         if (bytes.length >= 4 * size * size) {
-                            java.nio.ByteBuffer rgbaBuffer = java.nio.ByteBuffer.allocateDirect(bytes.length);
+                            Class<?> bufferUtilsClass = Class.forName("org.lwjgl.BufferUtils");
+                            java.nio.ByteBuffer rgbaBuffer = (java.nio.ByteBuffer) bufferUtilsClass.getMethod("createByteBuffer", int.class).invoke(null, bytes.length);
                             rgbaBuffer.put(bytes);
                             rgbaBuffer.flip();
 
@@ -121,6 +124,7 @@ public class DragonCursorAgent {
                             }
                             
                             try { imageClass.getMethod("free").invoke(imageObj); } catch (Exception e) { try { imageClass.getMethod("close").invoke(imageObj); } catch (Exception ignored) { } }
+                            if (rgbaBuffer.capacity() < 0) System.out.println("keep-alive");
                         }
                     }
                 }
@@ -136,7 +140,8 @@ public class DragonCursorAgent {
                         try { size = Integer.parseInt(System.getProperty("dragon.cursor.size", "64")); } catch(Exception e) {}
                         
                         if (bytes.length >= 4 * size * size) {
-                            java.nio.ByteBuffer rgbaBuffer = java.nio.ByteBuffer.allocateDirect(bytes.length);
+                            Class<?> bufferUtilsClass = Class.forName("org.lwjgl.BufferUtils");
+                            java.nio.ByteBuffer rgbaBuffer = (java.nio.ByteBuffer) bufferUtilsClass.getMethod("createByteBuffer", int.class).invoke(null, bytes.length);
                             rgbaBuffer.put(bytes);
                             rgbaBuffer.flip();
 
@@ -152,12 +157,13 @@ public class DragonCursorAgent {
                             }
                             
                             try { imageClass.getMethod("free").invoke(imageObj); } catch (Exception e) { try { imageClass.getMethod("close").invoke(imageObj); } catch (Exception ignored) { } }
+                            if (rgbaBuffer.capacity() < 0) System.out.println("keep-alive");
                         }
                     }
                 }
             } catch (Throwable t) {
                 try {
-                    java.io.PrintWriter pw = new java.io.PrintWriter(new java.io.FileWriter("/Users/kelpie/dragon_cursor_error.txt", true));
+                    java.io.PrintWriter pw = new java.io.PrintWriter(new java.io.FileWriter(System.getProperty("user.home") + "/dragon_cursor_error.txt", true));
                     pw.println("GlfwCreateWindowAdvice Exception:");
                     t.printStackTrace(pw);
                     pw.close();
@@ -185,7 +191,8 @@ public class DragonCursorAgent {
                         try { size = Integer.parseInt(System.getProperty("dragon.cursor.size", "64")); } catch(Exception e) {}
                         
                         if (bytes.length >= 4 * size * size) {
-                            java.nio.ByteBuffer rgbaBuffer = java.nio.ByteBuffer.allocateDirect(bytes.length);
+                            Class<?> bufferUtilsClass = Class.forName("org.lwjgl.BufferUtils");
+                            java.nio.ByteBuffer rgbaBuffer = (java.nio.ByteBuffer) bufferUtilsClass.getMethod("createByteBuffer", int.class).invoke(null, bytes.length);
                             rgbaBuffer.put(bytes);
                             rgbaBuffer.flip();
 
@@ -202,6 +209,7 @@ public class DragonCursorAgent {
                             }
                             
                             try { imageClass.getMethod("free").invoke(imageObj); } catch (Exception e) { try { imageClass.getMethod("close").invoke(imageObj); } catch (Exception ignored) { } }
+                            if (rgbaBuffer.capacity() < 0) System.out.println("keep-alive");
                         }
                     }
                 }
@@ -217,7 +225,8 @@ public class DragonCursorAgent {
                         try { size = Integer.parseInt(System.getProperty("dragon.cursor.size", "64")); } catch(Exception e) {}
                         
                         if (bytes.length >= 4 * size * size) {
-                            java.nio.ByteBuffer rgbaBuffer = java.nio.ByteBuffer.allocateDirect(bytes.length);
+                            Class<?> bufferUtilsClass = Class.forName("org.lwjgl.BufferUtils");
+                            java.nio.ByteBuffer rgbaBuffer = (java.nio.ByteBuffer) bufferUtilsClass.getMethod("createByteBuffer", int.class).invoke(null, bytes.length);
                             rgbaBuffer.put(bytes);
                             rgbaBuffer.flip();
 
@@ -233,12 +242,13 @@ public class DragonCursorAgent {
                             }
                             
                             try { imageClass.getMethod("free").invoke(imageObj); } catch (Exception e) { try { imageClass.getMethod("close").invoke(imageObj); } catch (Exception ignored) { } }
+                            if (rgbaBuffer.capacity() < 0) System.out.println("keep-alive");
                         }
                     }
                 }
             } catch (Throwable t) {
                 try {
-                    java.io.PrintWriter pw = new java.io.PrintWriter(new java.io.FileWriter("/Users/kelpie/dragon_cursor_error.txt", true));
+                    java.io.PrintWriter pw = new java.io.PrintWriter(new java.io.FileWriter(System.getProperty("user.home") + "/dragon_cursor_error.txt", true));
                     pw.println("GlfwShowWindowAdvice Exception:");
                     t.printStackTrace(pw);
                     pw.close();
@@ -265,7 +275,7 @@ public class DragonCursorAgent {
                 }
             } catch (Throwable t) {
                 try {
-                    java.io.PrintWriter pw = new java.io.PrintWriter(new java.io.FileWriter("/Users/kelpie/dragon_cursor_error.txt", true));
+                    java.io.PrintWriter pw = new java.io.PrintWriter(new java.io.FileWriter(System.getProperty("user.home") + "/dragon_cursor_error.txt", true));
                     pw.println("GlfwSetCursorAdvice Exception:");
                     t.printStackTrace(pw);
                     pw.close();
