@@ -5555,7 +5555,7 @@ impl MinecraftLauncher {
             let _ = std::fs::create_dir_all(&cursor_agent_dir);
 
             // Write the cursor image to disk
-            let cursor_png_path = cursor_agent_dir.join("cursor.png");
+            let cursor_rgba_path = cursor_agent_dir.join("cursor.rgba");
             let b64_data = if b64.contains("base64,") {
                 b64.split("base64,").nth(1).unwrap_or(b64)
             } else {
@@ -5565,8 +5565,13 @@ impl MinecraftLauncher {
             use base64::{Engine as _, engine::general_purpose};
             match general_purpose::STANDARD.decode(b64_data) {
                 Ok(bytes) => {
-                    if let Err(e) = std::fs::write(&cursor_png_path, bytes) {
-                        log_callback(format!("[DragonCursor] Failed to write cursor image: {}", e));
+                    if let Ok(img) = image::load_from_memory(&bytes) {
+                        let rgba = img.resize_exact(64, 64, image::imageops::FilterType::Lanczos3).to_rgba8();
+                        if let Err(e) = std::fs::write(&cursor_rgba_path, rgba.into_raw()) {
+                            log_callback(format!("[DragonCursor] Failed to write cursor rgba: {}", e));
+                        }
+                    } else {
+                        log_callback("[DragonCursor] Failed to parse cursor image bytes".to_string());
                     }
                 }
                 Err(e) => {
@@ -5575,7 +5580,7 @@ impl MinecraftLauncher {
             }
 
             // Write the pointer image to disk if available
-            let pointer_png_path = cursor_agent_dir.join("pointer.png");
+            let pointer_rgba_path = cursor_agent_dir.join("pointer.rgba");
             if let Some(ref pointer_b64) = options.pointer_image_base64 {
                 let p_b64_data = if pointer_b64.contains("base64,") {
                     pointer_b64.split("base64,").nth(1).unwrap_or(pointer_b64)
@@ -5584,8 +5589,13 @@ impl MinecraftLauncher {
                 };
                 match general_purpose::STANDARD.decode(p_b64_data) {
                     Ok(bytes) => {
-                        if let Err(e) = std::fs::write(&pointer_png_path, bytes) {
-                            log_callback(format!("[DragonCursor] Failed to write pointer image: {}", e));
+                        if let Ok(img) = image::load_from_memory(&bytes) {
+                            let rgba = img.resize_exact(64, 64, image::imageops::FilterType::Lanczos3).to_rgba8();
+                            if let Err(e) = std::fs::write(&pointer_rgba_path, rgba.into_raw()) {
+                                log_callback(format!("[DragonCursor] Failed to write pointer rgba: {}", e));
+                            }
+                        } else {
+                            log_callback("[DragonCursor] Failed to parse pointer image bytes".to_string());
                         }
                     }
                     Err(e) => {
@@ -5634,15 +5644,15 @@ impl MinecraftLauncher {
                 log_callback("[DragonCursor] Bundled agent resource not found".to_string());
             }
 
-            if cursor_agent_dest.exists() && cursor_png_path.exists() {
+            if cursor_agent_dest.exists() && cursor_rgba_path.exists() {
                 if !args.iter().any(|arg| arg == "-Dnet.bytebuddy.experimental=true") {
                     args.push("-Dnet.bytebuddy.experimental=true".to_string());
                 }
                 args.push(format!("-javaagent:{}", cursor_agent_dest.to_string_lossy()));
-                args.push(format!("-Ddragon.cursor.image={}", cursor_png_path.to_string_lossy()));
+                args.push(format!("-Ddragon.cursor.image={}", cursor_rgba_path.to_string_lossy()));
                 args.push("-Ddragon.cursor.size=64".to_string());
-                if pointer_png_path.exists() {
-                    args.push(format!("-Ddragon.pointer.image={}", pointer_png_path.to_string_lossy()));
+                if pointer_rgba_path.exists() {
+                    args.push(format!("-Ddragon.pointer.image={}", pointer_rgba_path.to_string_lossy()));
                 }
                 log_callback("[DragonCursor] Cursor agent loaded successfully".to_string());
             } else {

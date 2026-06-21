@@ -1,19 +1,19 @@
 {
-  "version": "1.0.3",
-  "notes": "Dragon Client v1.0.3",
-  "pub_date": "2026-06-18T11:17:35Z",
+  "version": "1.1.3",
+  "notes": "Dragon Client v1.1.3",
+  "pub_date": "2026-06-20T08:52:18Z",
   "platforms": {
     "darwin-aarch64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTSndCazFwa3VUdTNZczlaRzRLVkgrNTJzNXlFb3pjWUMvblJaU0dPazhQMUxta2RyR2NXOHJwdVJRNGlTVFVFbmZ0K2VRZEhrZ2NNZzNreHRja0VaWWpueTgrU05qaWdZPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgxNzgwODAxCWZpbGU6VHJhcEdhaW50LmFwcC50YXIuZ3oKdUJ6WGlDeUtrNHVyTjZJQnZ3OGx2SE02Y0lLaEw5Y0RmcWxwVG41TFZEdmczYXVRdlR2U0JFTzVMZ1lReS81bng2by8rRnp4Z1IvRjdPMllTZENmQWc9PQo=",
-      "url": "https://github.com/XBOT98df/TrapGaint/releases/download/v1.0.3/TrapGaint_aarch64.app.tar.gz"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTSndCazFwa3VUdTRtZFE2bVQ4SGo2d1F2TDR0OEYrM0dWSENxeFZmRjNMcHlCOG5PQlpyWG93ek1Pc01vb1hMK25jRGZzek5rZkd0bXJ1QTRTc0xpSjVycDkzaWZZbFF3PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgxOTQ0NzkwCWZpbGU6VHJhcEdhaW50LmFwcC50YXIuZ3oKejNad1RDaVl1djZtd3BKWjYrVlErKzNaRU5rc3hIWGlsNWJ4ZjhwYTh0Q0o1aGRkRTFCMXUzZUNUMWtJU280aFdDNTBsTndCRUhLN3cxcWIwUVRURFE9PQo=",
+      "url": "https://github.com/XBOT98df/TrapGaint/releases/download/v1.1.3/TrapGaint_aarch64.app.tar.gz"
     },
     "darwin-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTSndCazFwa3VUdTJ1aDV3OTg2ZUUydmlpNE40VUp3SFZhbUYzaXAyTjRQQ1YxbFAxaElSRWltZzlFVm1HaExTS2crendsa1FyRFVuNUZYeFBRcTQ0OUFUSkN1K1BnTkFvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgxNzgwODQzCWZpbGU6VHJhcEdhaW50LmFwcC50YXIuZ3oKME92cFE4bEJRZldCQnZWeEdSbVFnNEN3NklrdDJvTnVmZGNRN2JlRU5rVnRhckRKMm43ZmJGUUJSczB2cEpBUW5qZVNjcU1kNVZUdkR6QVh2bUpUQlE9PQo=",
-      "url": "https://github.com/XBOT98df/TrapGaint/releases/download/v1.0.3/TrapGaint_x64.app.tar.gz"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTSndCazFwa3VUdStxMTJNaXc3WFZaYVNZY1ZBOEEvcjZzak8xWTF5L0Q5WWJjYlVFb3FyQjQ5RCs0VVFjeUZtamhRT3NJNVZiaHJ4bzVmMTQ0c3ZNZlp0UnB5ZVVoVmcwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgxOTQ1MTE1CWZpbGU6VHJhcEdhaW50LmFwcC50YXIuZ3oKUDExZXJKZERVc1BOdzA0S0syclZyTldLeUhmcTFtVkR4WjZMTFBuTVI2R1l5TVpHazViOVZHY0hNcUJob2laNnV4Z2xiWkxhMWljeDlrYlJTeG5IQ2c9PQo=",
+      "url": "https://github.com/XBOT98df/TrapGaint/releases/download/v1.1.3/TrapGaint_x64.app.tar.gz"
     },
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTSndCazFwa3VUdXhQOFVmT3REUCt6eFlUbDVEbi85d2tad2QvMi9Ic3QzaHE3ai8vZEY5QVpsWDdPRUpvclNieTFvdkhUOFNMbDN5MVpINW8wM3NHN0Q2VDZndS91cVFvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgxNzgxMTMzCWZpbGU6VHJhcEdhaW50XzEuMC4zX3g2NF9lbi1VUy5tc2kKc25yVDR5aHQyV1BGVFdLZGNUbnAzamNZNEpadndGb09YSWk0Q0FqTWJNTGI3cGQ5VkRWTjl3Yjl3SG1OTUZUOWMrR3RDK0M4R3Z6NDFwUHVGRDByREE9PQo=",
-      "url": "https://github.com/XBOT98df/TrapGaint/releases/download/v1.0.3/TrapGaint_1.0.3_x64_en-US.msi"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTSndCazFwa3VUdTdiTGFldnVpODc4TlpqVk5zcVM1T1dvSTRGZU9nSWd5b2RpTUZZQ0dkZEFvU2U3bkhUZzZDRjdaNEJ1MThUZlE5ekUxbEZXNmZpeThpR2M3RnlDalFBPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgxOTQ1MzM4CWZpbGU6VHJhcEdhaW50XzEuMS4zX3g2NF9lbi1VUy5tc2kKNVd6UGZMSWZ0VlJLakFkOXJMcGZySlFsN3Q3TEIwTFZkQ2hmTUdYUU5GV2x3WVlSNHJqRWpqK3hFa2lBR2hWYWRCRlhQajNOK25MT01tK2FORzdDRFE9PQo=",
+      "url": "https://github.com/XBOT98df/TrapGaint/releases/download/v1.1.3/TrapGaint_1.1.3_x64_en-US.msi"
     }
   }
 }

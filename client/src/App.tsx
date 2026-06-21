@@ -223,7 +223,7 @@ function App() {
   // When both update check is done AND setup check is done, determine next state
   useEffect(() => {
     console.log('[App] State transition check:', { appState, updateCheckDone, hasCompletedSetup });
-    
+
     // Only transition if we're in update-check state and both checks are done
     if (appState === 'update-check' && updateCheckDone && hasCompletedSetup !== null) {
       if (hasCompletedSetup) {
