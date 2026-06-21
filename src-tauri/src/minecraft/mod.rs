@@ -9345,6 +9345,7 @@ impl MinecraftLauncher {
             28 => Some("SkinMC-Cape-156221.png"),
             29 => Some("SkinMC-Cape-155622.png"),
             30 => Some("SkinMC-Cape-155769.png"),
+            31 => Some("Adobe Express - file.png"),
             _ => None,
         }
     }

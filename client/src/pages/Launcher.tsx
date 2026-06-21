@@ -944,6 +944,19 @@ const CAPE_OPTIONS = [
   { index: 16, name: "Cape 8", image: "/capes/cape8.png" },
   { index: 17, name: "Cape 9", image: "/capes/cape9.png" },
   { index: 18, name: "DO Animated", image: "/capes/do.gif" },
+  { index: 19, name: "SkinMC 15433", image: "/capes/SkinMC-Cape-15433.png" },
+  { index: 20, name: "SkinMC 91129", image: "/capes/SkinMC-Cape-91129.png" },
+  { index: 21, name: "SkinMC 15460", image: "/capes/SkinMC-Cape-15460.png" },
+  { index: 22, name: "SkinMC 4985", image: "/capes/SkinMC-Cape-4985.png" },
+  { index: 23, name: "SkinMC 155912", image: "/capes/SkinMC-Cape-155912.png" },
+  { index: 24, name: "SkinMC 155822", image: "/capes/SkinMC-Cape-155822.png" },
+  { index: 25, name: "SkinMC 155834", image: "/capes/SkinMC-Cape-155834.png" },
+  { index: 26, name: "SkinMC 156238", image: "/capes/SkinMC-Cape-156238.png" },
+  { index: 27, name: "SkinMC 155867", image: "/capes/SkinMC-Cape-155867.png" },
+  { index: 28, name: "SkinMC 156221", image: "/capes/SkinMC-Cape-156221.png" },
+  { index: 29, name: "SkinMC 155622", image: "/capes/SkinMC-Cape-155622.png" },
+  { index: 30, name: "SkinMC 155769", image: "/capes/SkinMC-Cape-155769.png" },
+  { index: 31, name: "Adobe Express", image: "/capes/Adobe Express - file.png" },
 ] as const;
 
 const CAPE_INDEX_ALIASES: Record<number, number> = {
@@ -1009,6 +1022,28 @@ export default function Launcher() {
   const [skinsActiveTab, setSkinsActiveTab] = useState<'skins' | 'capes' | 'custom-skins'>('skins');
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
+  const [activeWKey, setActiveWKey] = useState(false);
+  const [activeSKey, setActiveSKey] = useState(false);
+
+  useEffect(() => {
+    const downHandler = (e: KeyboardEvent) => {
+      const k = e.key.toLowerCase();
+      if (k === 'w') setActiveWKey(true);
+      if (k === 's') setActiveSKey(true);
+    };
+    const upHandler = (e: KeyboardEvent) => {
+      const k = e.key.toLowerCase();
+      if (k === 'w') setActiveWKey(false);
+      if (k === 's') setActiveSKey(false);
+    };
+    window.addEventListener('keydown', downHandler);
+    window.addEventListener('keyup', upHandler);
+    return () => {
+      window.removeEventListener('keydown', downHandler);
+      window.removeEventListener('keyup', upHandler);
+    };
+  }, []);
+
 
   // Preload all cape images for instant loading
   useEffect(() => {
@@ -1364,7 +1399,12 @@ export default function Launcher() {
         await invoke('set_selected_cape', {
           capeIndex: normalizedSelectedCapeIndex
         });
-        void speakEvent('apply', 'Skin applied successfully.', 800);
+        const applyAudio = new Audio('/skin_applied.mp3');
+        applyAudio.play().catch(e => console.error("Audio play failed:", e));
+        setTimeout(() => {
+          applyAudio.pause();
+          applyAudio.currentTime = 0;
+        }, 2000);
         
         setIsUploading(false);
         // Clear selection after successful application
@@ -6548,7 +6588,7 @@ export default function Launcher() {
   // Keyboard navigation for cursors (W = forward, S = backward)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (miscStoreCategory === 'cursors') { // activeTab could be 'servers' or 'store'
+      if (activeTab === 'servers') { // activeTab is 'servers' for the Cursors page
         const key = e.key.toLowerCase();
         if (key === 'w') {
           // Backward (Prev) - Matches Left UI Button
@@ -9001,6 +9041,14 @@ export default function Launcher() {
         const { invoke } = await import('@tauri-apps/api/core');
         
         if (selectedGallerySkin) {
+          // Play audio instantly for 2 seconds
+          const applyAudio = new Audio('/skin_applied.mp3');
+          applyAudio.play().catch(e => console.error("Audio play failed:", e));
+          setTimeout(() => {
+            applyAudio.pause();
+            applyAudio.currentTime = 0;
+          }, 2000);
+          
           // Download skin from gallery
           try {
             const response = await fetch(selectedGallerySkin.downloadUrl);
@@ -9056,7 +9104,7 @@ export default function Launcher() {
               color: 'success',
               duration: 5000,
             });
-            void speakEvent('apply', 'Skin applied successfully.', 800);
+
             
             // Don't clear the preview immediately - keep it visible
             setTimeout(() => {
@@ -9157,11 +9205,12 @@ export default function Launcher() {
         } else {
           setUploadStatus('✓ Cape selected! Restart the game to apply.');
         }
-        void speakEvent(
-          'apply',
-          normalizedSelectedCapeIndex === null ? 'Cape removed successfully.' : 'Cape applied successfully.',
-          800
-        );
+        const applyAudio = new Audio('/skin_applied.mp3');
+        applyAudio.play().catch(e => console.error("Audio play failed:", e));
+        setTimeout(() => {
+          applyAudio.pause();
+          applyAudio.currentTime = 0;
+        }, 2000);
       } catch (error) {
         console.error('Cape selection failed:', error);
         setUploadStatus('❌ Failed to save cape: ' + error);
@@ -9295,9 +9344,9 @@ export default function Launcher() {
               <button 
                 onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
                 onWheelCapture={handleSkinWheel}
-                className="fixed left-8 top-[45%] z-[100] p-4 transition-transform hover:scale-110 active:scale-95 shrink-0"
+                className={`absolute left-8 top-[58%] -translate-y-1/2 z-[100] p-4 transition-all duration-150 shrink-0 ${activeWKey ? 'scale-95 brightness-75' : 'hover:scale-110 active:scale-95'}`}
               >
-                <img src="/Wkeu.png" alt="W Key Backward" className="w-48 h-48 drop-shadow-2xl object-contain scale-125" />
+                <img src="/Wkeu.png" alt="W Key Backward" className="w-40 h-40 drop-shadow-2xl object-contain" />
               </button>
               {/* S (Forward/Right) Button */}
               <button 
@@ -9306,9 +9355,9 @@ export default function Launcher() {
                   setCurrentPage(prev => Math.min(total - 1, prev + 1));
                 }}
                 onWheelCapture={handleSkinWheel}
-                className="fixed right-8 top-[45%] z-[100] p-4 transition-transform hover:scale-110 active:scale-95 shrink-0"
+                className={`absolute right-8 top-[58%] -translate-y-1/2 z-[100] p-4 transition-all duration-150 shrink-0 ${activeSKey ? 'scale-95 brightness-75' : 'hover:scale-110 active:scale-95'}`}
               >
-                <img src="/Skeu.png" alt="S Key Forward" className="w-48 h-48 drop-shadow-2xl object-contain scale-125" />
+                <img src="/Skeu.png" alt="S Key Forward" className="w-40 h-40 drop-shadow-2xl object-contain" />
               </button>
             </>
           )}
@@ -9352,6 +9401,14 @@ export default function Launcher() {
                       <div
                         key={`cape-${cape.index}`}
                         onClick={async () => {
+                          // Play audio instantly for 2 seconds
+                          const applyAudio = new Audio('/skin_applied.mp3');
+                          applyAudio.play().catch(e => console.error("Audio play failed:", e));
+                          setTimeout(() => {
+                            applyAudio.pause();
+                            applyAudio.currentTime = 0;
+                          }, 2000);
+                          
                           setSelectedCapeIndex(cape.index);
                           // Auto-apply cape immediately
                           if (activeAccount?.username) {
@@ -10796,9 +10853,9 @@ export default function Launcher() {
                               <button 
                                 onClick={() => setCursorPage(prev => Math.max(0, prev - 1))}
                                 onWheelCapture={handleCursorWheel}
-                                className="fixed left-24 top-[38%] z-[100] p-4 transition-transform hover:scale-110 active:scale-95 shrink-0"
+                                className={`absolute left-8 top-[58%] -translate-y-1/2 z-[100] p-4 transition-all duration-150 shrink-0 ${activeWKey ? 'scale-95 brightness-75' : 'hover:scale-110 active:scale-95'}`}
                               >
-                                <img src="/Wkeu.png" alt="W Key Forward" className="w-48 h-48 drop-shadow-2xl object-contain scale-125" />
+                                <img src="/Wkeu.png" alt="W Key Forward" className="w-40 h-40 drop-shadow-2xl object-contain" />
                               </button>
 
                               <div 
@@ -10846,9 +10903,9 @@ export default function Launcher() {
                               <button 
                                 onClick={() => setCursorPage(prev => Math.min(7, prev + 1))}
                                 onWheelCapture={handleCursorWheel}
-                                className="fixed right-24 top-[38%] z-[100] p-4 transition-transform hover:scale-110 active:scale-95 shrink-0"
+                                className={`absolute right-8 top-[58%] -translate-y-1/2 z-[100] p-4 transition-all duration-150 shrink-0 ${activeSKey ? 'scale-95 brightness-75' : 'hover:scale-110 active:scale-95'}`}
                               >
-                                <img src="/Skeu.png" alt="S Key Backward" className="w-48 h-48 drop-shadow-2xl object-contain scale-125" />
+                                <img src="/Skeu.png" alt="S Key Backward" className="w-40 h-40 drop-shadow-2xl object-contain" />
                               </button>
                             </div>
 
@@ -10975,9 +11032,9 @@ export default function Launcher() {
                               <button 
                                 onClick={() => setCursorPage(prev => Math.max(0, prev - 1))}
                                 onWheelCapture={handleCursorWheel}
-                                className="fixed left-24 top-[38%] z-[100] p-4 transition-transform hover:scale-110 active:scale-95 shrink-0"
+                                className={`absolute left-8 top-[58%] -translate-y-1/2 z-[100] p-4 transition-all duration-150 shrink-0 ${activeWKey ? 'scale-95 brightness-75' : 'hover:scale-110 active:scale-95'}`}
                               >
-                                <img src="/Wkeu.png" alt="W Key Forward" className="w-48 h-48 drop-shadow-2xl object-contain scale-125" />
+                                <img src="/Wkeu.png" alt="W Key Forward" className="w-40 h-40 drop-shadow-2xl object-contain" />
                               </button>
 
                               <div 
@@ -11025,9 +11082,9 @@ export default function Launcher() {
                               <button 
                                 onClick={() => setCursorPage(prev => Math.min(7, prev + 1))}
                                 onWheelCapture={handleCursorWheel}
-                                className="fixed right-24 top-[38%] z-[100] p-4 transition-transform hover:scale-110 active:scale-95 shrink-0"
+                                className={`absolute right-8 top-[58%] -translate-y-1/2 z-[100] p-4 transition-all duration-150 shrink-0 ${activeSKey ? 'scale-95 brightness-75' : 'hover:scale-110 active:scale-95'}`}
                               >
-                                <img src="/Skeu.png" alt="S Key Backward" className="w-48 h-48 drop-shadow-2xl object-contain scale-125" />
+                                <img src="/Skeu.png" alt="S Key Backward" className="w-40 h-40 drop-shadow-2xl object-contain" />
                               </button>
                             </div>
 
