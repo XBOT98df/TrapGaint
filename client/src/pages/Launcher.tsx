@@ -987,6 +987,13 @@ export default function Launcher() {
   const [activeTab, setActiveTab] = useState<TabType>("home");
   const [activeLoader, setActiveLoader] = useState<LoaderType>("vanilla");
   
+  // Apply dynamic theme based on active loader
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.remove('theme-vanilla', 'theme-forge', 'theme-fabric', 'theme-quilt', 'theme-dragon');
+    root.classList.add(`theme-${activeLoader}`);
+  }, [activeLoader]);
+  
   // Track last launched loader for Dynamic Island
   const [lastLaunchedLoader, setLastLaunchedLoader] = useState<LoaderType | null>(() => {
     return (localStorage.getItem('last_launched_loader') as LoaderType) || null;

@@ -346,6 +346,7 @@ impl super::MinecraftLauncher {
                             url,
                             path: lib_path,
                             fallback_urls,
+                            expected_sha1: None,
                         });
                     }
                 }

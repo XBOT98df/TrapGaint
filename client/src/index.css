@@ -574,3 +574,39 @@ h1, h2, h3, h4, h5, h6,
     filter: hue-rotate(0deg) brightness(1);
   }
 }
+
+/* Dynamic Loader Themes */
+.theme-vanilla {
+  --primary: 120 70% 45%;
+  --ring: 120 70% 45%;
+  --sidebar-primary: 120 70% 45%;
+  --sidebar-ring: 120 70% 45%;
+}
+
+.theme-forge {
+  --primary: 25 95% 55%;
+  --ring: 25 95% 55%;
+  --sidebar-primary: 25 95% 55%;
+  --sidebar-ring: 25 95% 55%;
+}
+
+.theme-fabric {
+  --primary: 45 95% 55%;
+  --ring: 45 95% 55%;
+  --sidebar-primary: 45 95% 55%;
+  --sidebar-ring: 45 95% 55%;
+}
+
+.theme-quilt {
+  --primary: 270 75% 65%;
+  --ring: 270 75% 65%;
+  --sidebar-primary: 270 75% 65%;
+  --sidebar-ring: 270 75% 65%;
+}
+
+.theme-dragon {
+  --primary: 330 81% 60%;
+  --ring: 330 81% 60%;
+  --sidebar-primary: 330 81% 60%;
+  --sidebar-ring: 330 81% 60%;
+}

@@ -532,6 +532,11 @@ async fn launch_game(
             Err(_) => None,
         };
 
+        let panorama_agent_jar_path = match app.path().resource_dir() {
+            Ok(dir) => Some(dir.join("resources").join("dragon-panorama-agent.jar").to_string_lossy().to_string()),
+            Err(_) => None,
+        };
+
         let options = LaunchOptions {
             version_id,
             username,
@@ -548,6 +553,7 @@ async fn launch_game(
             cursor_image_base64,
             pointer_image_base64,
             cursor_agent_jar_path,
+            panorama_agent_jar_path,
         };
         
         // Verify DragonSkins mod for Dragon Loader versions only

@@ -38,6 +38,7 @@ pub struct DownloadTask {
     pub url: String,
     pub path: PathBuf,
     pub fallback_urls: Vec<String>,
+    pub expected_sha1: Option<String>,
 }
 
 /// Download a single file with retries - optimized for speed
@@ -45,6 +46,7 @@ pub async fn download_file_with_client(
     client: &reqwest::Client,
     url: &str,
     path: &PathBuf,
+    expected_sha1: Option<&str>,
 ) -> Result<(), String> {
     // Create parent directory if needed
     if let Some(parent) = path.parent() {
@@ -67,18 +69,56 @@ pub async fn download_file_with_client(
     // Get content length for pre-allocation
     let _content_length = response.content_length();
 
+    let tmp_path = path.with_extension(format!("tmp.{}", uuid::Uuid::new_v4().to_string().replace("-", "").chars().take(8).collect::<String>()));
+
     // Use buffered writer for better I/O performance
-    let file = std::fs::File::create(path).map_err(|e| e.to_string())?;
+    let file = match std::fs::File::create(&tmp_path) {
+        Ok(f) => f,
+        Err(e) => return Err(e.to_string()),
+    };
     let mut writer = std::io::BufWriter::with_capacity(256 * 1024, file); // 256KB buffer
 
     let mut stream = response.bytes_stream();
 
+    let mut hasher = Sha1::new();
+
     while let Some(chunk) = stream.next().await {
-        let chunk = chunk.map_err(|e| e.to_string())?;
-        writer.write_all(&chunk).map_err(|e| e.to_string())?;
+        match chunk {
+            Ok(chunk) => {
+                hasher.update(&chunk);
+                if let Err(e) = writer.write_all(&chunk) {
+                    let _ = std::fs::remove_file(&tmp_path);
+                    return Err(e.to_string());
+                }
+            }
+            Err(e) => {
+                let _ = std::fs::remove_file(&tmp_path);
+                return Err(e.to_string());
+            }
+        }
     }
 
-    writer.flush().map_err(|e| e.to_string())?;
+    if let Err(e) = writer.flush() {
+        let _ = std::fs::remove_file(&tmp_path);
+        return Err(e.to_string());
+    }
+
+    // Verify SHA-1 if provided
+    if let Some(expected) = expected_sha1 {
+        let actual = format!("{:x}", hasher.finalize());
+        if !actual.eq_ignore_ascii_case(expected) {
+            let _ = std::fs::remove_file(&tmp_path);
+            return Err(format!("Hash mismatch! Expected {}, got {}", expected, actual));
+        }
+    }
+
+    // Ensure writer is dropped before renaming (especially important on Windows)
+    drop(writer);
+
+    if let Err(e) = std::fs::rename(&tmp_path, path) {
+        let _ = std::fs::remove_file(&tmp_path);
+        return Err(e.to_string());
+    }
 
     Ok(())
 }
@@ -96,7 +136,7 @@ pub async fn download_with_retries(
 
     // Try primary URL first with minimal delay between retries
     for attempt in 0..max_retries {
-        match download_file_with_client(client, &task.url, &task.path).await {
+        match download_file_with_client(client, &task.url, &task.path, task.expected_sha1.as_deref()).await {
             Ok(_) => return Ok(()),
             Err(e) => {
                 if attempt < max_retries - 1 {
@@ -108,7 +148,7 @@ pub async fn download_with_retries(
                 } else {
                     // Try fallback URLs immediately without delay
                     for fallback_url in &task.fallback_urls {
-                        match download_file_with_client(client, fallback_url, &task.path).await {
+                        match download_file_with_client(client, fallback_url, &task.path, task.expected_sha1.as_deref()).await {
                             Ok(_) => return Ok(()),
                             Err(fallback_err) => {
                                 // Log fallback failure but continue trying other fallbacks
@@ -281,6 +321,7 @@ pub async fn download_assets_parallel<F>(
     progress_callback: F,
     base_progress: f32,
     progress_range: f32,
+    label: &str,
 ) -> (usize, usize)
 where
     F: Fn(f32, String) + Send + Sync,
@@ -315,6 +356,7 @@ where
                 url,
                 path: asset_path,
                 fallback_urls: vec![],
+                expected_sha1: Some(hash.to_string()),
             });
         }
     }
@@ -326,7 +368,7 @@ where
         progress_callback,
         base_progress,
         progress_range,
-        "Downloading assets",
+        label,
     )
     .await
 }
@@ -386,11 +428,13 @@ where
                 // Convert forward slashes to platform-specific path separators
                 let normalized_path = path.replace('/', std::path::MAIN_SEPARATOR_STR);
                 let lib_path = libraries_dir.join(&normalized_path);
+                let expected_sha1 = artifact.get("sha1").and_then(|v| v.as_str()).map(|s| s.to_string());
                 if !lib_path.exists() {
                     tasks.push(DownloadTask {
                         url: url.to_string(),
                         path: lib_path,
                         fallback_urls: vec![],
+                        expected_sha1,
                     });
                 }
             }
@@ -446,6 +490,7 @@ where
                         },
                         path: lib_path,
                         fallback_urls,
+                        expected_sha1: None,
                     });
                 }
             }

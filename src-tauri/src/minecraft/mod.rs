@@ -134,6 +134,7 @@ pub struct LaunchOptions {
     pub cursor_image_base64: Option<String>,
     pub pointer_image_base64: Option<String>,
     pub cursor_agent_jar_path: Option<String>,
+    pub panorama_agent_jar_path: Option<String>,
 }
 
 impl MinecraftLauncher {
@@ -2999,7 +3000,7 @@ impl MinecraftLauncher {
             let lib_refs: Vec<&serde_json::Value> = libraries.iter().collect();
             let libraries_dir = self.libraries_dir.clone();
 
-            downloader::download_libraries_parallel(
+            let (downloaded, failed) = downloader::download_libraries_parallel(
                 &lib_refs,
                 &libraries_dir,
                 &progress_callback,
@@ -3007,6 +3008,12 @@ impl MinecraftLauncher {
                 0.35,
             )
             .await;
+
+            if failed > 0 {
+                let err_msg = format!("Failed to download {} libraries. Please check your internet connection.", failed);
+                eprintln!("Error: {}", err_msg);
+                return Err(err_msg);
+            }
 
             // Download and extract natives (still sequential as extraction needs to happen after download)
             progress_callback(0.75, "Extracting native libraries...".to_string());
@@ -3280,16 +3287,48 @@ impl MinecraftLauncher {
                                 &progress_callback,
                                 0.82,
                                 0.18,
+                                "Downloading assets",
                             )
                             .await;
 
                             if failed > 0 {
-                                eprintln!("Warning: {} assets failed to download", failed);
+                                let err_msg = format!("Failed to download {} assets. Please check your internet connection.", failed);
+                                eprintln!("Error: {}", err_msg);
+                                return Err(err_msg);
                             }
                             println!(
                                 "Downloaded {} new assets, {} failed (parallel)",
                                 downloaded, failed
                             );
+                        }
+                    }
+                }
+            }
+        }
+
+        // Verification pass at 100%
+        progress_callback(1.0, "Verifying installation...".to_string());
+        if let Some(asset_index) = version_json.get("assetIndex") {
+            if let Some(id) = asset_index["id"].as_str() {
+                let index_path = self.assets_dir.join("indexes").join(format!("{}.json", id));
+                if let Ok(index_content) = std::fs::read_to_string(&index_path) {
+                    if let Ok(index_json) = serde_json::from_str::<serde_json::Value>(&index_content) {
+                        if let Some(objects) = index_json["objects"].as_object() {
+                            let objects_dir = self.assets_dir.join("objects");
+                            let (_, failed_verify) = downloader::download_assets_parallel(
+                                objects,
+                                &objects_dir,
+                                &progress_callback,
+                                1.0,
+                                0.0,
+                                "Verifying installation",
+                            ).await;
+
+                            if failed_verify > 0 {
+                                let err_msg = format!("Verification failed: {} files missing or corrupted. Please try again.", failed_verify);
+                                eprintln!("Error: {}", err_msg);
+                                return Err(err_msg);
+                            }
                         }
                     }
                 }
@@ -3428,7 +3467,9 @@ impl MinecraftLauncher {
                         match client.get(url).send().await {
                             Ok(response) if response.status().is_success() => {
                                 if let Ok(bytes) = response.bytes().await {
-                                    if std::fs::write(&lib_path, &bytes).is_ok() {
+                                    let tmp_path = lib_path.with_extension(format!("tmp.{}", uuid::Uuid::new_v4().to_string().replace("-", "").chars().take(8).collect::<String>()));
+                                    if std::fs::write(&tmp_path, &bytes).is_ok() {
+                                        let _ = std::fs::rename(&tmp_path, &lib_path);
                                         // Validate the downloaded file
                                         if is_valid_jar(&lib_path) {
                                             downloaded_count += 1;
@@ -3441,6 +3482,7 @@ impl MinecraftLauncher {
                                             failed_downloads.push(path.to_string());
                                         }
                                     } else {
+                                        let _ = std::fs::remove_file(&tmp_path);
                                         failed_downloads.push(path.to_string());
                                     }
                                 }
@@ -3535,7 +3577,9 @@ impl MinecraftLauncher {
                                 match client.get(&url).send().await {
                                     Ok(response) if response.status().is_success() => {
                                         if let Ok(bytes) = response.bytes().await {
-                                            if std::fs::write(&lib_path, &bytes).is_ok() {
+                                            let tmp_path = lib_path.with_extension(format!("tmp.{}", uuid::Uuid::new_v4().to_string().replace("-", "").chars().take(8).collect::<String>()));
+                                            if std::fs::write(&tmp_path, &bytes).is_ok() {
+                                                let _ = std::fs::rename(&tmp_path, &lib_path);
                                                 // Validate the downloaded file
                                                 if is_valid_jar(&lib_path) {
                                                     downloaded = true;
@@ -3548,6 +3592,8 @@ impl MinecraftLauncher {
                                                     ));
                                                     std::fs::remove_file(&lib_path).ok();
                                                 }
+                                            } else {
+                                                let _ = std::fs::remove_file(&tmp_path);
                                             }
                                         }
                                     }
@@ -3570,10 +3616,11 @@ impl MinecraftLauncher {
                 downloaded_count, missing_count
             ));
             if !failed_downloads.is_empty() {
-                log_callback(format!(
-                    "[WARN] Failed to download {} libraries",
+                let err_msg = format!(
+                    "Failed to download {} required libraries. Please check your internet connection and disable any aggressive antivirus.",
                     failed_downloads.len()
-                ));
+                );
+                log_callback(format!("[ERROR] {}", err_msg));
                 // Log critical failures
                 for path in &failed_downloads {
                     if path.contains("logging")
@@ -3584,6 +3631,7 @@ impl MinecraftLauncher {
                         log_callback(format!("[ERROR] Critical library missing: {}", path));
                     }
                 }
+                return Err(err_msg);
             }
         }
 
@@ -3592,7 +3640,7 @@ impl MinecraftLauncher {
 
     async fn download_file(&self, url: &str, path: &PathBuf) -> Result<(), String> {
         let client = downloader::create_client();
-        downloader::download_file_with_client(&client, url, path).await
+        downloader::download_file_with_client(&client, url, path, None).await
     }
 
     pub async fn launch<F>(&self, options: &LaunchOptions, log_callback: F) -> Result<(), String>
@@ -4972,6 +5020,49 @@ impl MinecraftLauncher {
         )
         .await?;
 
+        // --- Asset Verification before Launch ---
+        log_callback("[INFO] Verifying game assets...".to_string());
+        
+        let asset_index_json = if let Some(parent) = parent_json.as_ref() {
+            parent.get("assetIndex").cloned().or_else(|| version_json.get("assetIndex").cloned())
+        } else {
+            version_json.get("assetIndex").cloned()
+        };
+
+        if let Some(asset_index) = asset_index_json {
+            if let Some(id) = asset_index["id"].as_str() {
+                let index_path = self.assets_dir.join("indexes").join(format!("{}.json", id));
+                if let Ok(index_content) = std::fs::read_to_string(&index_path) {
+                    if let Ok(index_json) = serde_json::from_str::<serde_json::Value>(&index_content) {
+                        if let Some(objects) = index_json["objects"].as_object() {
+                            let objects_dir = self.assets_dir.join("objects");
+                            let (_, failed_assets) = downloader::download_assets_parallel(
+                                objects,
+                                &objects_dir,
+                                |_, msg| {
+                                    log_callback(format!("[Assets] {}", msg));
+                                },
+                                0.0,
+                                1.0,
+                                "Verifying assets"
+                            ).await;
+
+                            if failed_assets > 0 {
+                                let err_msg = format!("Launch aborted: {} assets failed to verify/download. Please check your internet connection.", failed_assets);
+                                log_callback(format!("[ERROR] {}", err_msg));
+                                return Err(err_msg);
+                            }
+                        }
+                    }
+                } else {
+                    let err_msg = format!("Asset index {} not found! Please repair your installation.", id);
+                    log_callback(format!("[ERROR] {}", err_msg));
+                    return Err(err_msg);
+                }
+            }
+        }
+        // ----------------------------------------
+
         log_callback("[INFO] Building classpath...".to_string());
 
         // Build classpath - collect libraries from both this version and parent (if inherited)
@@ -5661,6 +5752,70 @@ impl MinecraftLauncher {
         }
 
         // Detect LWJGL version to use correct flags (use parent version for modded)
+        // Add Dragon Panorama Agent for custom loading screen background
+        {
+            let panorama_agent_dir = self.game_dir.join("DragonPanorama");
+            let panorama_agent_dest = panorama_agent_dir.join("dragon-panorama-agent.jar");
+            let _ = std::fs::create_dir_all(&panorama_agent_dir);
+
+            let mut resource_candidates = vec![
+                self.game_dir.join("dragon-panorama-agent.jar"),
+                std::env::current_exe()
+                    .unwrap_or_default()
+                    .parent()
+                    .unwrap_or(std::path::Path::new("."))
+                    .join("dragon-panorama-agent.jar"),
+                std::env::current_exe()
+                    .unwrap_or_default()
+                    .parent()
+                    .unwrap_or(std::path::Path::new("."))
+                    .join("../Resources/dragon-panorama-agent.jar"),
+            ];
+
+            if let Some(ref path) = options.panorama_agent_jar_path {
+                resource_candidates.insert(0, std::path::PathBuf::from(path));
+            }
+
+            let mut agent_refreshed = false;
+            for candidate in &resource_candidates {
+                if candidate.exists() {
+                    match std::fs::copy(candidate, &panorama_agent_dest) {
+                        Ok(_) => {
+                            agent_refreshed = true;
+                            log_callback(format!("[DragonPanorama] Agent refreshed from {:?}", candidate));
+                        }
+                        Err(e) => {
+                            log_callback(format!("[DragonPanorama] Failed to copy agent: {}", e));
+                        }
+                    }
+                    break;
+                }
+            }
+
+            if !agent_refreshed && !panorama_agent_dest.exists() {
+                log_callback("[DragonPanorama] Bundled agent resource not found".to_string());
+            }
+
+            if panorama_agent_dest.exists() {
+                if !args.iter().any(|arg| arg == "-Dnet.bytebuddy.experimental=true") {
+                    args.push("-Dnet.bytebuddy.experimental=true".to_string());
+                }
+                args.push(format!("-javaagent:{}", panorama_agent_dest.to_string_lossy()));
+                
+                let loader_color = if options.version_id.contains("forge") {
+                    "orange"
+                } else if options.version_id.contains("fabric") {
+                    "golden"
+                } else if options.version_id.contains("quilt") {
+                    "purple"
+                } else {
+                    "green"
+                };
+                args.push(format!("-Ddragon.loader.color={}", loader_color));
+                
+                log_callback("[DragonPanorama] Panorama agent loaded successfully".to_string());
+            }
+        }
         let lwjgl_version = Self::detect_lwjgl_version(effective_version_json);
 
         log_callback(format!("[INFO] LWJGL version: {}", lwjgl_version));
